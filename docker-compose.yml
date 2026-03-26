@@ -1,0 +1,14 @@
+services:
+  web:
+    build:
+      context: .
+      target: development
+    volumes:
+      - ./src:/app          # live reload: code changes reflected immediately
+      - ./src/media:/app/media  # bind mount — files visible locally under src/media/
+    ports:
+      - "9033:8000"
+    user: "${UID}:${GID}"
+    env_file: .env
+    environment:
+      DEBUG: "True"

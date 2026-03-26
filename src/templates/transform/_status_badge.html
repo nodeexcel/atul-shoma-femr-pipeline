@@ -1,0 +1,13 @@
+{% comment %}
+Reusable status badge component.
+Usage: {% include "transform/_status_badge.html" with status=job.status %}
+{% endcomment %}
+{% if status == "done" %}
+  <span class="badge text-bg-success status-badge">Done</span>
+{% elif status == "processing" %}
+  <span class="badge text-bg-warning status-badge">Processing</span>
+{% elif status == "failed" %}
+  <span class="badge text-bg-danger status-badge">Failed</span>
+{% else %}
+  <span class="badge text-bg-secondary status-badge">Pending</span>
+{% endif %}

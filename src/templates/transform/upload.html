@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Upload — FEMR Transform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <!-- Upload card -->
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Upload FEMR Funds File</div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          Upload the <strong>FEMR Funds .xlsx</strong> workbook. The pipeline will read the
+          <em>FEMR Funds</em> sheet and write long-format quarterly data to the <em>Output</em> tab.
+        </p>
+
+        <form method="post" enctype="multipart/form-data" id="upload-form">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label for="{{ form.input_file.id_for_label }}" class="form-label fw-medium">
+              {{ form.input_file.label }}
+            </label>
+            <input type="file"
+                   name="{{ form.input_file.html_name }}"
+                   id="{{ form.input_file.id_for_label }}"
+                   accept=".xlsx"
+                   class="form-control {% if form.input_file.errors %}is-invalid{% endif %}">
+            {% if form.input_file.errors %}
+              <div class="invalid-feedback">
+                {% for error in form.input_file.errors %}{{ error }}{% endfor %}
+              </div>
+            {% endif %}
+            <div class="form-text">{{ form.input_file.help_text }}</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            <span id="btn-label">Transform</span>
+            <span id="btn-spinner" class="spinner-border spinner-border-sm ms-1 d-none" role="status"></span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Recent jobs -->
+    {% if recent_jobs %}
+    <div class="card">
+      <div class="card-header fw-semibold">Recent Jobs</div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>File</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in recent_jobs %}
+            <tr>
+              <td class="text-muted">{{ job.pk }}</td>
+              <td class="text-truncate" style="max-width:180px;" title="{{ job.input_filename }}">
+                {{ job.input_filename }}
+              </td>
+              <td>{% include "transform/_status_badge.html" with status=job.status %}</td>
+              <td class="text-muted small">{{ job.created_at|date:"d M Y H:i" }}</td>
+              <td>
+                <a href="{% url 'transform:job_detail' job.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.getElementById('upload-form').addEventListener('submit', function () {
+    const btn = document.getElementById('submit-btn');
+    document.getElementById('btn-label').textContent = 'Processing…';
+    document.getElementById('btn-spinner').classList.remove('d-none');
+    btn.disabled = true;
+  });
+</script>
+{% endblock %}

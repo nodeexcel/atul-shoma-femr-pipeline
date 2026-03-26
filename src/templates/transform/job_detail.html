@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Job #{{ job.pk }} — FEMR Transform{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Job #{{ job.pk }}</span>
+        {% include "transform/_status_badge.html" with status=job.status %}
+      </div>
+
+      <div class="card-body">
+
+        <!-- Job metadata -->
+        <dl class="row mb-0">
+          <dt class="col-sm-4 text-muted">Input file</dt>
+          <dd class="col-sm-8">{{ job.input_filename }}</dd>
+
+          <dt class="col-sm-4 text-muted">Created</dt>
+          <dd class="col-sm-8">{{ job.created_at|date:"d M Y H:i:s" }}</dd>
+
+          <dt class="col-sm-4 text-muted">Updated</dt>
+          <dd class="col-sm-8">{{ job.updated_at|date:"d M Y H:i:s" }}</dd>
+        </dl>
+
+        <hr>
+
+        <!-- Outcome -->
+        {% if job.is_done %}
+          <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                 class="bi bi-check-circle-fill flex-shrink-0" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477
+                       9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02
+                       l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <span>Transformation complete. Your output file is ready.</span>
+          </div>
+          <a href="{% url 'transform:download' job.pk %}"
+             class="btn btn-success">
+            Download {{ job.output_filename }}
+          </a>
+
+        {% elif job.is_failed %}
+          <div class="alert alert-danger mb-3">
+            <strong>Transformation failed.</strong>
+            {% if job.error_message %}
+              <pre class="mt-2 mb-0 small text-danger">{{ job.error_message }}</pre>
+            {% endif %}
+          </div>
+
+        {% else %}
+          <div class="alert alert-warning d-flex align-items-center gap-2">
+            <span class="spinner-border spinner-border-sm flex-shrink-0" role="status"></span>
+            <span>Job is {{ job.get_status_display|lower }}…</span>
+          </div>
+        {% endif %}
+
+      </div>
+
+      <div class="card-footer text-end">
+        <a href="{% url 'transform:upload' %}" class="btn btn-outline-secondary btn-sm">
+          &larr; Upload another file
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
