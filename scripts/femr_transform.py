@@ -192,11 +192,6 @@ def write_output_sheet(wb, sequences, data):
     ws['B1'] = 'Qtr Date'
     ws['C1'] = 'Type'
     ws['D1'] = 'Amount'
-    ws['G1'] = 'Remaining cash is a formula '
-    ws['I1'] = 'Obligated'
-    ws['J1'] = 'minus '
-    ws['K1'] = 'Expended'
-    ws['L1'] = 'for each qtr'
 
     # Style header
     header_font = Font(bold=True)
@@ -245,39 +240,31 @@ def main(input_file: str = INPUT_FILE, output_file: str = OUTPUT_FILE):
     print(f"  Committed={val11[0]:,.0f}  (expected 2,337,926)")
 
     print("\nWriting output file...")
-    # Load source workbook and keep the existing Output template (styles/number formats).
     out_wb = load_workbook(input_file)
+
     if 'Output' in out_wb.sheetnames:
         out_ws = out_wb['Output']
+        # Delete all columns beyond D to remove extra template content (preserves A-D styles)
+        if out_ws.max_column > 4:
+            out_ws.delete_cols(5, out_ws.max_column - 4)
     else:
-        # If there is no Output sheet, create one (basic headers only).
         out_ws = out_wb.create_sheet('Output', 1)
         headers = ['Sequence', 'Qtr Date', 'Type', 'Amount']
         for col, h in enumerate(headers, 1):
-            out_ws.cell(row=1, column=col, value=h).font = Font(bold=True, name='Arial')
-        out_ws['G1'] = 'Remaining cash is a formula '
-        out_ws['I1'] = 'Obligated'
-        out_ws['J1'] = 'minus '
-        out_ws['K1'] = 'Expended'
-        out_ws['L1'] = 'for each qtr'
+            out_ws.cell(row=1, column=col, value=h).font = Font(bold=True)
 
     output_rows = generate_output(sequences, data)
 
-    # Write values end-to-end into the existing template rows.
-    # Important: do not round or override number formats; this keeps precision identical
-    # to how the current `Output` tab is calculated in your input workbook.
     for i, (seq, qdate, type_name, amount) in enumerate(output_rows, start=2):
         out_ws.cell(row=i, column=1, value=seq)
-        out_ws.cell(row=i, column=2, value=qdate)
+        date_cell = out_ws.cell(row=i, column=2, value=qdate)
+        date_cell.number_format = 'mm-dd-yy'
         out_ws.cell(row=i, column=3, value=type_name)
         out_ws.cell(row=i, column=4, value=amount)
 
-    expected_last_row = 1 + len(output_rows)
-    # If the template has extra rows beyond what we generate, clear values only (keep styles).
-    if out_ws.max_row > expected_last_row:
-        for r in range(expected_last_row + 1, out_ws.max_row + 1):
-            for c in range(1, 5):
-                out_ws.cell(row=r, column=c, value=None)
+    # Auto-filter covering full data range (matches original)
+    last_row = 1 + len(output_rows)
+    out_ws.auto_filter.ref = f'A1:D{last_row}'
 
     out_wb.save(output_file)
     print(f"Saved: {output_file}")

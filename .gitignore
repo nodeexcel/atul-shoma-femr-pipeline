@@ -218,3 +218,7 @@ __marimo__/
 
 src/media/outputs
 src/media/uploads
+
+files/.*xlsx#
+files/*output*xlsx
+files/*test*xlsx

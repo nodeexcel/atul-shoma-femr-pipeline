@@ -148,18 +148,14 @@ def _build_output_rows(sequences: list[str], data: dict) -> list[tuple]:
 def _write_output_sheet(ws_out, output_rows: list[tuple], has_template: bool):
     """Write output rows into ws_out, clearing stale rows if needed."""
     if not has_template:
-        bold_arial = Font(bold=True, name='Arial')
+        bold = Font(bold=True)
         for col, header in enumerate(['Sequence', 'Qtr Date', 'Type', 'Amount'], 1):
-            ws_out.cell(row=1, column=col, value=header).font = bold_arial
-        ws_out['G1'] = 'Remaining cash is a formula '
-        ws_out['I1'] = 'Obligated'
-        ws_out['J1'] = 'minus '
-        ws_out['K1'] = 'Expended'
-        ws_out['L1'] = 'for each qtr'
+            ws_out.cell(row=1, column=col, value=header).font = bold
 
     for i, (seq, qdate, type_name, amount) in enumerate(output_rows, start=2):
         ws_out.cell(row=i, column=1, value=seq)
-        ws_out.cell(row=i, column=2, value=qdate)
+        date_cell = ws_out.cell(row=i, column=2, value=qdate)
+        date_cell.number_format = 'mm-dd-yy'
         ws_out.cell(row=i, column=3, value=type_name)
         ws_out.cell(row=i, column=4, value=amount)
 
@@ -169,6 +165,9 @@ def _write_output_sheet(ws_out, output_rows: list[tuple], has_template: bool):
         for r in range(expected_last + 1, ws_out.max_row + 1):
             for c in range(1, 5):
                 ws_out.cell(row=r, column=c, value=None)
+
+    # Auto-filter covering full data range
+    ws_out.auto_filter.ref = f'A1:D{expected_last}'
 
 
 def run_transform(input_path: str) -> bytes:
@@ -187,6 +186,9 @@ def run_transform(input_path: str) -> bytes:
 
     if 'Output' in wb_out.sheetnames:
         ws_out = wb_out['Output']
+        # Delete all columns beyond D to remove extra template content (preserves A-D styles)
+        if ws_out.max_column > 4:
+            ws_out.delete_cols(5, ws_out.max_column - 4)
     else:
         ws_out = wb_out.create_sheet('Output', 1)
 
