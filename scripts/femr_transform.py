@@ -241,8 +241,12 @@ def main(input_file: str = INPUT_FILE, output_file: str = OUTPUT_FILE):
         out_ws.cell(row=i, column=3, value=type_name)
         out_ws.cell(row=i, column=4, value=amount)
 
-    # Auto-filter covering full data range
+    # Delete stale rows from a larger previous template
     last_row = 1 + len(output_rows)
+    if out_ws.max_row > last_row:
+        out_ws.delete_rows(last_row + 1, out_ws.max_row - last_row)
+
+    # Auto-filter covering full data range
     out_ws.auto_filter.ref = f'A1:D{last_row}'
 
     out_wb.save(output_file)

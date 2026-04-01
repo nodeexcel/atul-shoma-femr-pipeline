@@ -150,12 +150,10 @@ def _write_output_sheet(ws_out, output_rows: list[tuple], has_template: bool):
         ws_out.cell(row=i, column=3, value=type_name)
         ws_out.cell(row=i, column=4, value=amount)
 
-    # Clear any leftover rows from a previous (larger) template
+    # Delete stale rows from a larger previous template
     expected_last = 1 + len(output_rows)
     if ws_out.max_row > expected_last:
-        for r in range(expected_last + 1, ws_out.max_row + 1):
-            for c in range(1, 5):
-                ws_out.cell(row=r, column=c, value=None)
+        ws_out.delete_rows(expected_last + 1, ws_out.max_row - expected_last)
 
     # Auto-filter covering full data range
     ws_out.auto_filter.ref = f'A1:D{expected_last}'
