@@ -9,6 +9,10 @@ Four types per (Sequence, Quarter):
   Obligated      – Obligated column
   Expended       – Cash Collected column
   Remaining Cash – Obligated minus Expended
+
+Quarters are discovered dynamically from row 4 of the FEMR Funds sheet.
+Cells with 'QE M/D/YY' labels are quarter end dates; annual total columns
+('FYxx Total', 'Total') are skipped automatically.
 """
 import io
 import logging
@@ -20,50 +24,37 @@ from openpyxl.styles import Font
 
 logger = logging.getLogger('transform.services')
 
-# Quarter definitions: (quarter_end_date, col_committed, col_obligated, col_expended)
-# Columns are 1-indexed matching the FEMR Funds sheet.
-# Annual total columns are intentionally skipped between FY blocks.
-QUARTERS = [
-    (datetime(2020,  6, 30), 10, 11, 12),
-    (datetime(2020,  9, 30), 13, 14, 15),
-    # skip FY20 Total (16–18)
-    (datetime(2020, 12, 31), 19, 20, 21),
-    (datetime(2021,  3, 30), 22, 23, 24),
-    (datetime(2021,  6, 30), 25, 26, 27),
-    (datetime(2021,  9, 30), 28, 29, 30),
-    # skip FY21 Total (31–33)
-    (datetime(2021, 12, 31), 34, 35, 36),
-    (datetime(2022,  3, 30), 37, 38, 39),
-    (datetime(2022,  6, 30), 40, 41, 42),
-    (datetime(2022,  9, 30), 43, 44, 45),
-    # skip FY22 Total (46–48)
-    (datetime(2022, 12, 31), 49, 50, 51),
-    (datetime(2023,  3, 30), 52, 53, 54),
-    (datetime(2023,  6, 30), 55, 56, 57),
-    (datetime(2023,  9, 30), 58, 59, 60),
-    # skip FY23 Total (61–63)
-    (datetime(2023, 12, 31), 64, 65, 66),
-    (datetime(2024,  3, 30), 67, 68, 69),
-    (datetime(2024,  6, 30), 70, 71, 72),
-    (datetime(2024,  9, 30), 73, 74, 75),
-    # skip FY24 Total (76–78)
-    (datetime(2024, 12, 31), 79, 80, 81),
-    (datetime(2025,  3, 30), 82, 83, 84),
-    (datetime(2025,  6, 30), 85, 86, 87),
-    (datetime(2025,  9, 30), 88, 89, 90),
-    # skip FY25 Total (91–93)
-    (datetime(2025, 12, 31), 94, 95, 96),
-    (datetime(2026,  3, 30), 97, 98, 99),
-    (datetime(2026,  6, 30), 100, 101, 102),
-    (datetime(2026,  9, 30), 103, 104, 105),
-    # skip FY26 Total (106–108), Grand Total (109–112)
-]
-
 _OUTPUT_TYPES = [
     ('Committed',  0),
     ('Obligated',  1),
     ('Expended',   2),
 ]
+
+
+def _discover_quarters(ws_femr) -> list[tuple]:
+    """
+    Dynamically build the quarter list by reading row 4 of the FEMR Funds sheet.
+    Cells with a 'QE M/D/YY' label are quarter end dates; all other labels
+    (e.g. 'FYxx Total', 'Total') are skipped automatically.
+
+    Returns: list of (quarter_end_date, col_committed, col_obligated, col_expended)
+             Columns are 1-indexed.
+    """
+    quarters = []
+    for col in range(1, ws_femr.max_column + 1):
+        raw = ws_femr.cell(row=4, column=col).value
+        if raw is None:
+            continue
+        label = str(raw).strip()
+        if not label.upper().startswith('QE '):
+            continue
+        date_str = label[3:].strip()
+        try:
+            qdate = datetime.strptime(date_str, '%m/%d/%y')
+        except ValueError:
+            continue
+        quarters.append((qdate, col, col + 1, col + 2))
+    return quarters
 
 
 def safe_float(val) -> float:
@@ -104,7 +95,7 @@ def _read_sequences(ws_femr, ws_output=None) -> list[str]:
     return sequences
 
 
-def _aggregate_data(ws_femr, sequences: list[str]) -> dict:
+def _aggregate_data(ws_femr, sequences: list[str], quarters: list[tuple]) -> dict:
     """
     Aggregate (sum) quarterly financials per sequence from FEMR Funds sheet.
     Returns: { sequence -> { quarter_date -> [committed, obligated, expended] } }
@@ -120,7 +111,7 @@ def _aggregate_data(ws_femr, sequences: list[str]) -> dict:
         seq = str(raw).strip()
         if seq not in seq_set:
             continue
-        for (qdate, cc, co, ce) in QUARTERS:
+        for (qdate, cc, co, ce) in quarters:
             data[seq][qdate][0] += safe_float(row[cc - 1])
             data[seq][qdate][1] += safe_float(row[co - 1])
             data[seq][qdate][2] += safe_float(row[ce - 1])
@@ -128,14 +119,14 @@ def _aggregate_data(ws_femr, sequences: list[str]) -> dict:
     return data
 
 
-def _build_output_rows(sequences: list[str], data: dict) -> list[tuple]:
+def _build_output_rows(sequences: list[str], data: dict, quarters: list[tuple]) -> list[tuple]:
     """
     Build the flat list of output rows.
     Structure: for each quarter → Committed block, Obligated block,
                Expended block, Remaining Cash block, each with all sequences.
     """
     rows = []
-    for (qdate, *_) in QUARTERS:
+    for (qdate, *_) in quarters:
         for type_name, idx in _OUTPUT_TYPES:
             for seq in sequences:
                 rows.append((seq, qdate, type_name, data[seq][qdate][idx]))
@@ -192,14 +183,15 @@ def run_transform(input_path: str) -> bytes:
     else:
         ws_out = wb_out.create_sheet('Output', 1)
 
+    quarters = _discover_quarters(ws_femr)
     sequences = _read_sequences(ws_femr, ws_output_template)
-    data = _aggregate_data(ws_femr, sequences)
-    output_rows = _build_output_rows(sequences, data)
+    data = _aggregate_data(ws_femr, sequences, quarters)
+    output_rows = _build_output_rows(sequences, data, quarters)
     _write_output_sheet(ws_out, output_rows, has_template=ws_output_template is not None)
 
     logger.info(
         "Transform complete: %d sequences × %d quarters × 4 types = %d rows",
-        len(sequences), len(QUARTERS), len(output_rows),
+        len(sequences), len(quarters), len(output_rows),
     )
 
     buf = io.BytesIO()

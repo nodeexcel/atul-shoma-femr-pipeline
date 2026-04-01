@@ -3,23 +3,16 @@ FEMR Funds Transformation Script
 Reads 'FEMR Funds' input sheet and generates 'Output' tab in the same format.
 
 Output structure:
-  For each quarter date (26 quarters), 4 blocks of 134 rows each:
+  For each quarter date, 4 blocks of N rows each:
     Block 1: Committed (Award Amount)
     Block 2: Obligated
     Block 3: Expended (Cash Collected)
     Block 4: Remaining Cash (= Obligated - Expended for that quarter)
 
-Column mapping in FEMR Funds (1-indexed):
-  Col 4: Sequence
-  Col 10-12: FY20 Q3 (6/30/20)
-  Col 13-15: FY20 Q4 (9/30/20)
-  [skip 16-18: FY20 Total]
-  Col 19-21: FY21 Q1 (12/31/20)
-  Col 22-24: FY21 Q2 (3/30/21)
-  Col 25-27: FY21 Q3 (6/30/21)
-  Col 28-30: FY21 Q4 (9/30/21)
-  [skip 31-33: FY21 Total]
-  ... and so on, skipping annual totals
+Quarters are discovered dynamically from row 4 of the FEMR Funds sheet.
+Row 4 contains labels like 'QE 6/30/20' for quarter end dates and
+'FY20 Total' / 'Total' for annual totals (which are automatically skipped).
+Each quarter at column C maps to: C=Committed, C+1=Obligated, C+2=Expended.
 """
 
 from openpyxl import load_workbook, Workbook
@@ -30,47 +23,34 @@ from collections import defaultdict
 import copy
 import argparse
 
-# ─── Quarter definitions: (date_str, col_committed, col_obligated, col_expended)
-# Columns are 1-indexed matching the FEMR Funds sheet
-QUARTERS = [
-    (datetime(2020,  6, 30), 10, 11, 12),
-    (datetime(2020,  9, 30), 13, 14, 15),
-    # skip FY20 Total (16-18)
-    (datetime(2020, 12, 31), 19, 20, 21),
-    (datetime(2021,  3, 30), 22, 23, 24),
-    (datetime(2021,  6, 30), 25, 26, 27),
-    (datetime(2021,  9, 30), 28, 29, 30),
-    # skip FY21 Total (31-33)
-    (datetime(2021, 12, 31), 34, 35, 36),
-    (datetime(2022,  3, 30), 37, 38, 39),
-    (datetime(2022,  6, 30), 40, 41, 42),
-    (datetime(2022,  9, 30), 43, 44, 45),
-    # skip FY22 Total (46-48)
-    (datetime(2022, 12, 31), 49, 50, 51),
-    (datetime(2023,  3, 30), 52, 53, 54),
-    (datetime(2023,  6, 30), 55, 56, 57),
-    (datetime(2023,  9, 30), 58, 59, 60),
-    # skip FY23 Total (61-63)
-    (datetime(2023, 12, 31), 64, 65, 66),
-    (datetime(2024,  3, 30), 67, 68, 69),
-    (datetime(2024,  6, 30), 70, 71, 72),
-    (datetime(2024,  9, 30), 73, 74, 75),
-    # skip FY24 Total (76-78)
-    (datetime(2024, 12, 31), 79, 80, 81),
-    (datetime(2025,  3, 30), 82, 83, 84),
-    (datetime(2025,  6, 30), 85, 86, 87),
-    (datetime(2025,  9, 30), 88, 89, 90),
-    # skip FY25 Total (91-93)
-    (datetime(2025, 12, 31), 94, 95, 96),
-    (datetime(2026,  3, 30), 97, 98, 99),
-    (datetime(2026,  6, 30), 100, 101, 102),
-    (datetime(2026,  9, 30), 103, 104, 105),
-    # skip FY26 Total (106-108), Total (109-112)
-]
-
 # Fallback paths (the script is now meant to be called with CLI args)
 INPUT_FILE = '/mnt/user-data/uploads/2026_03_FEMR_funds.xlsx'
 OUTPUT_FILE = '/mnt/user-data/outputs/2026_03_FEMR_funds_output.xlsx'
+
+def discover_quarters(ws):
+    """
+    Dynamically build the quarter list by reading row 4 of the FEMR Funds sheet.
+    Cells in row 4 with a 'QE M/D/YY' label are quarter end dates; all other
+    labels (e.g. 'FY20 Total', 'Total') are skipped automatically.
+
+    Returns: list of (quarter_end_date, col_committed, col_obligated, col_expended)
+             Columns are 1-indexed.
+    """
+    quarters = []
+    for col in range(1, ws.max_column + 1):
+        raw = ws.cell(row=4, column=col).value
+        if raw is None:
+            continue
+        label = str(raw).strip()
+        if not label.upper().startswith('QE '):
+            continue
+        date_str = label[3:].strip()   # e.g. "6/30/20"
+        try:
+            qdate = datetime.strptime(date_str, '%m/%d/%y')
+        except ValueError:
+            continue
+        quarters.append((qdate, col, col + 1, col + 2))
+    return quarters
 
 def safe_float(val):
     """Convert value to float, returning 0.0 if None or not numeric."""
@@ -84,11 +64,14 @@ def safe_float(val):
 def read_input(wb):
     """
     Read FEMR Funds sheet and aggregate values by (sequence, quarter).
+    Quarters are discovered dynamically from row 4 of the FEMR Funds sheet.
     Returns:
-        sequences: ordered list of unique sequences (from Output tab)
-        data: dict { sequence -> { quarter_date -> (committed, obligated, expended) } }
+        quarters:  list of (quarter_end_date, col_committed, col_obligated, col_expended)
+        sequences: ordered list of unique sequences (from Output tab if present)
+        data:      dict { sequence -> { quarter_date -> [committed, obligated, expended] } }
     """
     ws = wb['FEMR Funds']
+    quarters = discover_quarters(ws)
 
     # Sequence order is taken from the existing Output template when present.
     if 'Output' in wb.sheetnames:
@@ -100,13 +83,15 @@ def read_input(wb):
     else:
         # Fallback: derive sequences from the FEMR Funds sheet, preserving first-seen order.
         sequences = []
+        seen = set()
         for row in ws.iter_rows(min_row=7, max_row=306, values_only=True):
             raw_seq = row[3]  # Column D
             if raw_seq is None:
                 continue
             seq = str(raw_seq).strip()
-            if seq and seq not in sequences:
+            if seq and seq not in seen:
                 sequences.append(seq)
+                seen.add(seq)
 
     # Aggregate input data: sequence -> quarter_date -> [committed, obligated, expended]
     data = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, 0.0]))
@@ -119,35 +104,27 @@ def read_input(wb):
         if seq not in sequences:
             continue
 
-        for (qdate, cc, co, ce) in QUARTERS:
+        for (qdate, cc, co, ce) in quarters:
             # cols are 1-indexed; row tuple is 0-indexed
-            committed = safe_float(row[cc - 1])
-            obligated = safe_float(row[co - 1])
-            expended  = safe_float(row[ce - 1])
-            data[seq][qdate][0] += committed
-            data[seq][qdate][1] += obligated
-            data[seq][qdate][2] += expended
+            data[seq][qdate][0] += safe_float(row[cc - 1])
+            data[seq][qdate][1] += safe_float(row[co - 1])
+            data[seq][qdate][2] += safe_float(row[ce - 1])
 
-    return sequences, data
+    return quarters, sequences, data
 
-def generate_output(sequences, data):
+def generate_output(quarters, sequences, data):
     """
-    Build the output as a list of rows:
-    [sequence, qtr_date, type, amount]
+    Build the output as a list of rows: (sequence, qtr_date, type, amount)
     Structure: for each quarter, 4 blocks (Committed, Obligated, Expended, Remaining Cash),
                each block listing all sequences in order.
     """
     rows = []
-    for (qdate, cc, co, ce) in QUARTERS:
+    for (qdate, *_) in quarters:
         for type_name, idx in [('Committed', 0), ('Obligated', 1), ('Expended', 2)]:
             for seq in sequences:
-                amount = data[seq][qdate][idx]
-                rows.append((seq, qdate, type_name, amount))
-        # Remaining Cash block
+                rows.append((seq, qdate, type_name, data[seq][qdate][idx]))
         for seq in sequences:
-            obligated = data[seq][qdate][1]
-            expended  = data[seq][qdate][2]
-            remaining = obligated - expended
+            remaining = data[seq][qdate][1] - data[seq][qdate][2]
             rows.append((seq, qdate, 'Remaining Cash', remaining))
     return rows
 
@@ -223,10 +200,12 @@ def main(input_file: str = INPUT_FILE, output_file: str = OUTPUT_FILE):
     wb = load_workbook(input_file, data_only=True)
 
     print("Parsing FEMR Funds input...")
-    sequences, data = read_input(wb)
+    quarters, sequences, data = read_input(wb)
+    print(f"  Quarters discovered: {len(quarters)}")
+    for qdate, cc, *_ in quarters:
+        print(f"    {qdate.strftime('%m/%d/%Y')}  (col {cc})")
     print(f"  Sequences: {len(sequences)}")
-    print(f"  Quarters:  {len(QUARTERS)}")
-    print(f"  Expected output rows: {len(sequences) * len(QUARTERS) * 4}")
+    print(f"  Expected output rows: {len(sequences) * len(quarters) * 4}")
 
     # Verify a known value: 2ADP001, 9/30/20 should be 27100000 committed
     q = datetime(2020, 9, 30)
@@ -253,7 +232,7 @@ def main(input_file: str = INPUT_FILE, output_file: str = OUTPUT_FILE):
         for col, h in enumerate(headers, 1):
             out_ws.cell(row=1, column=col, value=h).font = Font(bold=True)
 
-    output_rows = generate_output(sequences, data)
+    output_rows = generate_output(quarters, sequences, data)
 
     for i, (seq, qdate, type_name, amount) in enumerate(output_rows, start=2):
         out_ws.cell(row=i, column=1, value=seq)
@@ -262,7 +241,7 @@ def main(input_file: str = INPUT_FILE, output_file: str = OUTPUT_FILE):
         out_ws.cell(row=i, column=3, value=type_name)
         out_ws.cell(row=i, column=4, value=amount)
 
-    # Auto-filter covering full data range (matches original)
+    # Auto-filter covering full data range
     last_row = 1 + len(output_rows)
     out_ws.auto_filter.ref = f'A1:D{last_row}'
 
