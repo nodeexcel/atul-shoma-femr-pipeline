@@ -73,25 +73,31 @@ def read_input(wb):
     ws = wb['FEMR Funds']
     quarters = discover_quarters(ws)
 
-    # Sequence order is taken from the existing Output template when present.
+    # Always derive sequences from FEMR Funds (source of truth).
+    sequences = []
+    seen = set()
+    for row in ws.iter_rows(min_row=7, max_row=306, values_only=True):
+        raw_seq = row[3]  # Column D
+        if raw_seq is None:
+            continue
+        seq = str(raw_seq).strip()
+        if seq and seq not in seen:
+            sequences.append(seq)
+            seen.add(seq)
+
+    # If Output template exists, use its sequence order as a guide.
+    # Sequences present in the template are sorted to the front in template order;
+    # any new sequences not in the template are appended at the end.
     if 'Output' in wb.sheetnames:
         ws_out = wb['Output']
-        sequences = []
+        template_order = {}
         for row in ws_out.iter_rows(min_row=2, max_row=135, values_only=True):
             if row[0] is not None:
-                sequences.append(row[0])
-    else:
-        # Fallback: derive sequences from the FEMR Funds sheet, preserving first-seen order.
-        sequences = []
-        seen = set()
-        for row in ws.iter_rows(min_row=7, max_row=306, values_only=True):
-            raw_seq = row[3]  # Column D
-            if raw_seq is None:
-                continue
-            seq = str(raw_seq).strip()
-            if seq and seq not in seen:
-                sequences.append(seq)
-                seen.add(seq)
+                seq = str(row[0]).strip()
+                if seq and seq not in template_order:
+                    template_order[seq] = len(template_order)
+        if template_order:
+            sequences.sort(key=lambda s: template_order.get(s, len(template_order)))
 
     # Aggregate input data: sequence -> quarter_date -> [committed, obligated, expended]
     data = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, 0.0]))

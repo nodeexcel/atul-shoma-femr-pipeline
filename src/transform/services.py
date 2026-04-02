@@ -70,18 +70,11 @@ def safe_float(val) -> float:
 def _read_sequences(ws_femr, ws_output=None) -> list[str]:
     """
     Return the ordered sequence list.
-    Prefers the existing Output template (rows 2–135, first block = all sequences)
-    so that output order stays consistent across runs.
-    Falls back to first-seen order in FEMR Funds when no template exists.
+    Always derives sequences from FEMR Funds (source of truth).
+    If an Output template exists, its sequence order is used to sort the list
+    so output order stays consistent across runs. New sequences not in the
+    template are appended at the end.
     """
-    if ws_output is not None:
-        sequences = []
-        for row in ws_output.iter_rows(min_row=2, max_row=135, values_only=True):
-            if row[0] is not None:
-                sequences.append(row[0])
-        if sequences:
-            return sequences
-
     sequences = []
     seen = set()
     for row in ws_femr.iter_rows(min_row=7, max_row=306, values_only=True):
@@ -92,6 +85,17 @@ def _read_sequences(ws_femr, ws_output=None) -> list[str]:
         if seq and seq not in seen:
             sequences.append(seq)
             seen.add(seq)
+
+    if ws_output is not None:
+        template_order = {}
+        for row in ws_output.iter_rows(min_row=2, max_row=135, values_only=True):
+            if row[0] is not None:
+                seq = str(row[0]).strip()
+                if seq and seq not in template_order:
+                    template_order[seq] = len(template_order)
+        if template_order:
+            sequences.sort(key=lambda s: template_order.get(s, len(template_order)))
+
     return sequences
 
 
