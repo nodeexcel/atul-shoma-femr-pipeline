@@ -1,10 +1,37 @@
 # FEMR Report — Run Commands Reference
 
-**Two script versions available:**
-- **v5** (`femr_netsuite_report_5.py`) — per-sequence metadata fetch (~2s per sequence)
-- **v6** (`femr_netsuite_report_6.py`) — bulk metadata preload (one-time ~90s, saves ~12 min for full run)
+**Current active script: v9** (`femr_netsuite_report_9.py`)
 
-For any run of 50+ sequences, **use v6**. For single sequence or very small groups, either works.
+| Version | File | Status |
+|---------|------|--------|
+| v9 | `femr_netsuite_report_9.py` | **Active** — dynamic quarter range (auto-detects latest quarter from MV) |
+| v8 | `femr_netsuite_report_8.py` | Superseded |
+| v7 | `femr_netsuite_report_7.py` | Used for WFD/Internal/Comml/OGA sent to Josh |
+| v5/v6 | older | Archived |
+
+---
+
+## V9 — Current Version
+
+```bash
+# Single sequence test
+venv/shoma/bin/python -u scripts/femr_netsuite_report_9.py --sequence 2ADP001 -o test_v9_2ADP001.xlsx
+
+# Single group
+venv/shoma/bin/python -u scripts/femr_netsuite_report_9.py --group WFD -o femr_v9_wfd --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_9.py --group OGA -o femr_v9_oga --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_9.py --group ADP -o femr_v9_adp --workers 40
+
+# Overnight (all groups)
+nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_9.py -o femr_v9 --workers 40 > /tmp/v9_full.log 2>&1 &
+
+# Manual override if auto-detect is slow (saves ~1 min at startup)
+venv/shoma/bin/python -u scripts/femr_netsuite_report_9.py --group ADP -o femr_v9_adp --fy-end 2026 --latest-quarter Q4
+```
+
+**Wait for Taylor's updated GROUP MAPPING (post 2026-04-22 meeting) before running WFD/OGA/ADP.**
+
+---
 
 ---
 
