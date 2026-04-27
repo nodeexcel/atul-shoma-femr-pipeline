@@ -1,7 +1,16 @@
 """
-FEMR NetSuite Report Generator (v12)
+FEMR NetSuite Report Generator (v14)
 =====================================
 Matches the new FEMR Export Template 041526.xlsx layout.
+
+Changes from v12:
+  - Chart legend moved to RIGHT side (was bottom). Bottom legend overlapped
+    X-axis quarter labels. Josh confirmed right side is correct (2026-04-27).
+  - Chart X-axis stays at bottom when Y values are negative. Previously
+    catAx used crosses="autoZero", which placed the category axis at Y=0 —
+    when all values were negative this pushed quarter labels to the top.
+    Fixed by setting crosses="min" in _patch_chart_axes() so the X-axis
+    always anchors at the minimum Y value (bottom of chart).
 
 Changes from v11:
   - Chart axis labels: Y-axis (dollar values) and X-axis (quarter labels) now
@@ -838,7 +847,7 @@ def _patch_chart_axes(xlsx_path: str) -> None:
                         f'</a:pPr><a:endParaRPr lang="en-US"/></a:p>'
                         f'</txPr>'
                         f'<crossAx val="{cross_ax_val}" />'
-                        f'<crosses val="autoZero" />'
+                        f'<crosses val="min" />'
                         f'<auto val="1" />'
                         f'<lblAlgn val="ctr" />'
                         f'<lblOffset val="100" />'
@@ -870,7 +879,7 @@ def _add_line_chart(ws, fiscal_years: list, latest_quarter: str = "Q4"):
     chart.width = max(25, num_quarters * 1.5)
 
     # No chart title — matches template exactly
-    chart.legend.position = "b"
+    chart.legend.position = "r"
 
     # Axis labels must be visible (delete=False) — without this openpyxl hides tick labels
     chart.y_axis.delete = False
@@ -1092,7 +1101,7 @@ def run(mapping_path: str, output_prefix: str,
         latest_quarter: Optional[str] = None,
         split_size: int = SPLIT_SIZE):
 
-    logger.info("=== FEMR NetSuite Report Generator (v12) ===")
+    logger.info("=== FEMR NetSuite Report Generator (v14) ===")
 
     # Detect latest quarter with data (unless overridden via --latest-quarter)
     if latest_quarter is None:

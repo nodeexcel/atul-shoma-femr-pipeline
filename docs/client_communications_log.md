@@ -23,6 +23,8 @@ When you share an email with Claude:
 | 2026-04-16 | Taylor Bui | Sequence/Rollup data issue (CC007, 2ADP099) | [→ Taylor Thread](#april-16-2026--taylor-bui-sequence-issue-thread) |
 | 2026-04-18 | Josh Grapani | Feedback on WFD/Internal/Comml files | [→ Apr 18 Feedback](#april-18-2026--josh-grapani-file-review-feedback) |
 | 2026-04-22 | Josh + Taylor | Post-meeting mapping update (PENDING) | [→ Awaited](#awaited-communications) |
+| 2026-04-24 | Josh Grapani | Confirmed EWD014→WFD and OGA047 data | [→ Apr 24 Mapping](#april-24-2026--josh-grapani-mapping-confirmation) |
+| 2026-04-24 | Josh Grapani | CC007 confirmation + ADP review feedback | [→ Apr 24 ADP Feedback](#april-24-2026--josh-grapani-adp-review-feedback) |
 
 ---
 
@@ -91,6 +93,80 @@ When you share an email with Claude:
 - Chart: `chart.y_axis.delete = False`, `chart.x_axis.delete = False` — axis labels must not be hidden
 - Y-axis numFmt: `'$#,##0.00'` to match Josh's image
 - Pre-FY2020: need additional API calls for FY2016–2019 data per sequence, feed into cumulative starting values
+
+---
+
+## April 24, 2026 — Josh Grapani Mapping Confirmation
+
+**Type:** Email reply (in response to our v12 files)
+**Participants:** Josh Grapani, Atul Kumar, Shoma Sinha
+
+**Raw content:** Josh replied with a NetSuite data screenshot showing two rows:
+
+| PROJ_INT_ID | DISPLAY_SEQUENCE | PROJECT_NUMBER | DISPLAY_ROLLUP_NUM | REPORTING_GROUP_TYPE_A | TYPE_A_PROJECT_CATEGORY | TYPE_B_PROJECT_TYPE |
+|-------------|-----------------|----------------|-------------------|----------------------|------------------------|-------------------|
+| 2915 | OGA047 | 730030 | 730030 | OGA | OGA FedI | OGA-Tech Prime |
+| 693 | EWD014 | 850002 | 850002 | WFD | EWD | EWD-Non Gov |
+
+**Decisions made:**
+1. **EWD014** → REPORTING_GROUP = **WFD** (confirmed). Must move from OGA file to WFD file.
+2. **OGA047** → REPORTING_GROUP = **OGA** (confirmed, exists in NetSuite). Must be added to OGA file. PROJECT_NUMBER = DISPLAY_ROLLUP_NUM = 730030 (orphan — both same).
+
+**Action items:**
+- [x] Update GROUP MAPPING.xlsx: change EWD014 from OGA → WFD
+- [x] Update GROUP MAPPING.xlsx: add OGA047 as OGA
+- [ ] Re-run WFD (gains EWD014)
+- [ ] Re-run OGA (gains OGA047, loses EWD014)
+
+**Script impact:**
+- GROUP MAPPING.xlsx SEQUENCE sheet must be updated before re-run
+- OGA047 is an orphan (PROJECT_NUMBER = DISPLAY_ROLLUP_NUM = 730030)
+
+---
+
+## April 24, 2026 — Josh Grapani ADP Review Feedback
+
+**Type:** Email reply (reviewing ADP files 001–200)
+**Participants:** Josh Grapani, Atul Kumar, Shoma Sinha
+
+**Raw content / key quotes:**
+> "Yes, project 960011 is now included as children of 4006, so now they are in the same rollup."
+
+> "The charts are inconsistent. Axis labels for Quarters and Legends overlaps."
+
+> "Axis labels are on top when the y axis value (Amount) is in negative side."
+
+> "This one is the closest to the correct chart, but it looks like the legends are still inside the chart area. This only happens when there is only one value on the negative side of the y axis (Amount)."
+
+> "For the charts, I suggest that the legends be placed on the right side, not parallel to the x-axis (quarters) values."
+
+**Chart issues (with screenshots):**
+- Image #2: Legend at bottom overlaps with X-axis quarter labels (positive values chart)
+- Image #3: When Y values are negative, category axis (quarter labels) moves to TOP of chart because axis crosses at Y=0. Legend overlaps "Plot Area".
+- Image #4: Closest to correct but legend still inside chart area
+
+**Data issues:**
+- **2ADP001** — G&A 5991 values missing for both Actuals and Budget rows. Also affects cumulative section.
+- **2ADP022** — No values in either the main table or cumulative section (should have data).
+
+**Decisions made:**
+1. **CC007** — CONFIRMED: project 960011 is now a child of rollup 4006. 1 tab is correct going forward.
+2. **Legend position** — Josh explicitly requests legend on the **RIGHT** side (not bottom).
+3. **Negative Y-axis** — category axis must stay at BOTTOM even when all values are negative. Currently crosses at Y=0, pushing quarter labels to top.
+4. **2ADP001 G&A 5991** — data missing, must investigate API response.
+5. **2ADP022** — all data missing, must investigate.
+
+**Action items:**
+- [ ] Fix chart: move legend from bottom → right (`chart.legend.position = "r"`)
+- [ ] Fix chart: category axis stays at bottom when Y is negative (set `crosses = "min"` not `"autoZero"` in catAx XML)
+- [ ] Investigate 2ADP001 G&A 5991 missing values (check API account name mapping)
+- [ ] Investigate 2ADP022 missing all values (check if sequence exists in NetSuite / API returns data)
+- [ ] Create v14 with all fixes, re-run all groups
+
+**Script impact:**
+- `chart.legend.position = "r"` in `_add_line_chart()`
+- In `_patch_chart_axes()`: change `<crosses val="autoZero" />` → `<crosses val="min" />` in catAx replacement XML
+- 2ADP001/2ADP022: investigate before coding fix
 
 ---
 

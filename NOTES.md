@@ -130,29 +130,50 @@ After a group run, verify file names follow the expected pattern:
 
 ---
 
-## Run Commands (current active: v12)
+## Run Commands (current active: v13)
 
+### v13 — with cache (recommended)
 ```bash
-# Single sequence test
+# First full run — fetches from API and builds cache (slow, same as v12)
+venv/shoma/bin/python -u scripts/femr_netsuite_report_13.py --group WFD -o femr_v13 --workers 40 --cache-dir cache/wfd
+venv/shoma/bin/python -u scripts/femr_netsuite_report_13.py --group ADP -o femr_v13 --workers 40 --cache-dir cache/adp
+
+# Re-render from cache (fast — seconds per sequence, no API calls)
+venv/shoma/bin/python -u scripts/femr_netsuite_report_13.py --group WFD -o femr_v13 --workers 40 --cache-dir cache/wfd
+
+# Force-refresh one sequence (e.g. Taylor fixed data for EWD001)
+venv/shoma/bin/python -u scripts/femr_netsuite_report_13.py --group WFD -o femr_v13 --workers 40 --cache-dir cache/wfd --force-refresh EWD001
+
+# Force-refresh all (new quarter released, or full data reset needed)
+venv/shoma/bin/python -u scripts/femr_netsuite_report_13.py --group ADP -o femr_v13 --workers 40 --cache-dir cache/adp --force-refresh
+
+# All groups overnight (first run with cache)
+nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_13.py -o femr_v13 --workers 40 --cache-dir cache/all > /tmp/v13_full.log 2>&1 &
+```
+
+### v13 — without cache (same behaviour as v12)
+```bash
+venv/shoma/bin/python -u scripts/femr_netsuite_report_13.py --group WFD -o femr_v13 --workers 40
+```
+
+### v12 — legacy (no cache)
+```bash
 venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --sequence 2ADP001 -o test_v12_2ADP001.xlsx --skip-preload
-
-# Single group
 venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group WFD -o femr_v12 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group ADP -o femr_v12 --workers 40
-
-# All groups (overnight)
 nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py -o femr_v12 --workers 40 > /tmp/v12_full.log 2>&1 &
-
-# Split-size test (verify chunking logic with small group)
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group WFD -o /tmp/test_split --split-size 5 --workers 40
 ```
 
 ### Monitoring a background run
 ```bash
-tail -f /tmp/v12_full.log
+tail -f /tmp/v13_full.log
 ps aux | grep femr_netsuite_report | grep -v grep
-watch -n 30 'ls -lah femr_v12*.xlsx 2>/dev/null'
+watch -n 30 'ls -lah femr_v13*.xlsx 2>/dev/null'
 ```
+
+### Cache invalidation rules
+- **New quarter detected** → cache auto-invalidates (quarter key mismatch → full re-fetch)
+- **Taylor fixes data mid-quarter** → `--force-refresh SEQUENCE` for affected sequences
+- **Full data reset** → `--force-refresh` (no arg) or delete `cache/` directory
 
 ---
 

@@ -1,7 +1,27 @@
 """
-FEMR NetSuite Report Generator (v12)
+FEMR NetSuite Report Generator (v13)
 =====================================
 Matches the new FEMR Export Template 041526.xlsx layout.
+
+Changes from v12:
+  - Local JSON cache with quarter-based invalidation.
+    On first run, all API data is fetched and saved to --cache-dir (one JSON
+    file per sequence). On subsequent runs, cache is used when the detected
+    latest fiscal quarter matches the cached quarter — skipping all API calls.
+    A new quarter appearing in the MV automatically invalidates the cache for
+    every sequence (full re-fetch). Within a quarter, use --force-refresh to
+    manually invalidate specific sequences or everything.
+
+    New flags:
+      --cache-dir path/    Directory to store/read JSON cache files.
+                           If not set, caching is disabled (behaves like v12).
+      --force-refresh      Ignore cache for ALL sequences (re-fetch everything).
+      --force-refresh SEQ  Ignore cache for one specific sequence only.
+
+    Cache file format: {cache_dir}/{sequence}.json
+    Contains: cached_quarter, cached_year, fetched_at, is_multi, metadata,
+              financials (serialised as "fye||q||seg||acc" string keys),
+              pre_fy2020.
 
 Changes from v11:
   - Chart axis labels: Y-axis (dollar values) and X-axis (quarter labels) now
@@ -90,6 +110,7 @@ import zipfile as _zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 from pathlib import Path
+from datetime import datetime
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -185,6 +206,103 @@ RIGHT  = Alignment(horizontal="right",  vertical="center")
 VCENTER_LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
 
 NUM_FMT = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LOCAL JSON CACHE
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SEP = "||"   # separator for serialising tuple keys — never appears in field values
+
+
+def _cache_path(cache_dir: str, sequence: str) -> Path:
+    safe = sequence.replace("/", "_").replace("\\", "_")
+    return Path(cache_dir) / f"{safe}.json"
+
+
+def _task_key_str(key: tuple) -> str:
+    return _SEP.join(str(v) for v in key)
+
+
+def _str_task_key(s: str) -> tuple:
+    parts = s.split(_SEP)
+    return tuple(parts)
+
+
+def _id_str(id_tuple: tuple) -> str:
+    return _SEP.join(str(v) for v in id_tuple)
+
+
+def _str_id(s: str) -> tuple:
+    parts = s.split(_SEP, 1)
+    return (parts[0], parts[1]) if len(parts) == 2 else tuple(parts)
+
+
+def cache_save(cache_dir: str, sequence: str,
+               cached_quarter: str, cached_year: int,
+               is_multi: bool, metadata: list,
+               financials, pre_fy2020):
+    Path(cache_dir).mkdir(parents=True, exist_ok=True)
+    if is_multi:
+        # financials: {id_tuple: {task_key: amount}}
+        fin_serial = {
+            _id_str(id_t): {_task_key_str(tk): v for tk, v in d.items()}
+            for id_t, d in financials.items()
+        }
+        pre_serial = {
+            _id_str(id_t): v for id_t, v in pre_fy2020.items()
+        }
+    else:
+        # financials: {task_key: amount}
+        fin_serial = {_task_key_str(tk): v for tk, v in financials.items()}
+        pre_serial = pre_fy2020
+
+    payload = {
+        "cached_quarter": cached_quarter,
+        "cached_year": cached_year,
+        "fetched_at": datetime.utcnow().isoformat(),
+        "is_multi": is_multi,
+        "metadata": metadata,
+        "financials": fin_serial,
+        "pre_fy2020": pre_serial,
+    }
+    _cache_path(cache_dir, sequence).write_text(
+        json.dumps(payload, indent=None, separators=(",", ":")), encoding="utf-8"
+    )
+
+
+def cache_load(cache_dir: str, sequence: str,
+               current_quarter: str, current_year: int) -> Optional[dict]:
+    """Return cache payload if valid (quarter+year match), else None."""
+    p = _cache_path(cache_dir, sequence)
+    if not p.exists():
+        return None
+    try:
+        payload = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if payload.get("cached_quarter") != current_quarter or \
+       payload.get("cached_year") != current_year:
+        return None
+    return payload
+
+
+def cache_deserialise(payload: dict):
+    """Convert serialised cache payload back to native Python types."""
+    is_multi = payload["is_multi"]
+    metadata = payload["metadata"]
+    if is_multi:
+        financials = {
+            _str_id(id_s): {tuple(_str_task_key(tk)): v for tk, v in d.items()}
+            for id_s, d in payload["financials"].items()
+        }
+        pre_fy2020 = {
+            _str_id(id_s): v for id_s, v in payload["pre_fy2020"].items()
+        }
+    else:
+        financials = {tuple(_str_task_key(tk)): v for tk, v in payload["financials"].items()}
+        pre_fy2020 = payload["pre_fy2020"]
+    return metadata, financials, pre_fy2020
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DYNAMIC QUARTER DETECTION
@@ -1025,7 +1143,10 @@ def tab_name_for(sequence: str, meta: dict, multi: bool) -> str:
 
 def process_sequence(wb: Workbook, seq_entry: dict, fiscal_years: list,
                      workers: int, preloaded_metadata: Optional[dict] = None,
-                     latest_quarter: str = "Q4") -> int:
+                     latest_quarter: str = "Q4",
+                     cache_dir: Optional[str] = None,
+                     fiscal_year_end: int = FISCAL_YEAR_END_DEFAULT,
+                     force_refresh: bool = False) -> int:
     """
     Process one sequence from the mapping file.
     May produce multiple tabs if the sequence has multiple identifiers
@@ -1035,7 +1156,33 @@ def process_sequence(wb: Workbook, seq_entry: dict, fiscal_years: list,
     """
     sequence = seq_entry["sequence"]
 
-    # Get all identifiers for this sequence from preloaded data (or fetch fallback)
+    # ── Cache check ──────────────────────────────────────────────────────────
+    if cache_dir and not force_refresh:
+        payload = cache_load(cache_dir, sequence, latest_quarter, fiscal_year_end)
+        if payload is not None:
+            logger.info("  [cache hit] %s", sequence)
+            metas, financials, pre_fy2020_data = cache_deserialise(payload)
+            multi = payload["is_multi"]
+            if not multi:
+                meta = metas[0]
+                name = tab_name_for(sequence, meta, multi=False)
+                build_tab(wb, meta, financials, fiscal_years, name,
+                          latest_quarter, pre_fy2020_data)
+                return 1
+            tabs_written = 0
+            per_id_data = financials
+            pre_per_id = pre_fy2020_data
+            for meta in metas:
+                id_tuple = ("orphan", meta["project_number"]) if meta["is_orphan"] \
+                           else ("rollup", meta["rollup_num"])
+                data = per_id_data.get(id_tuple, {})
+                pre_cumulative = pre_per_id.get(id_tuple, {})
+                name = tab_name_for(sequence, meta, multi=True)
+                build_tab(wb, meta, data, fiscal_years, name, latest_quarter, pre_cumulative)
+                tabs_written += 1
+            return tabs_written
+
+    # ── Fetch from API ───────────────────────────────────────────────────────
     if preloaded_metadata is not None and sequence in preloaded_metadata:
         metas = preloaded_metadata[sequence]
     else:
@@ -1048,17 +1195,19 @@ def process_sequence(wb: Workbook, seq_entry: dict, fiscal_years: list,
     multi = len(metas) > 1
 
     if not multi:
-        # Fast path: single identifier → use netamount API
         meta = metas[0]
         name = tab_name_for(sequence, meta, multi=False)
         logger.info("  [single-id] %s → tab %s", sequence, name)
         data = fetch_financials_single(sequence, fiscal_years, workers=workers,
                                        latest_quarter=latest_quarter)
         pre_cumulative = fetch_pre_fy2020_single(sequence, workers=workers)
+        if cache_dir:
+            cache_save(cache_dir, sequence, latest_quarter, fiscal_year_end,
+                       False, metas, data, pre_cumulative)
+            logger.info("  [cache saved] %s", sequence)
         build_tab(wb, meta, data, fiscal_years, name, latest_quarter, pre_cumulative)
         return 1
 
-    # Multi-identifier path: use MV to differentiate rollups vs orphans
     logger.info("  [multi-id] %s has %d identifiers: %s",
                 sequence,
                 len(metas),
@@ -1066,6 +1215,11 @@ def process_sequence(wb: Workbook, seq_entry: dict, fiscal_years: list,
     per_id_data = fetch_financials_multi(sequence, fiscal_years, workers=workers,
                                           latest_quarter=latest_quarter)
     pre_per_id = fetch_pre_fy2020_multi(sequence, workers=workers)
+
+    if cache_dir:
+        cache_save(cache_dir, sequence, latest_quarter, fiscal_year_end,
+                   True, metas, per_id_data, pre_per_id)
+        logger.info("  [cache saved] %s", sequence)
 
     tabs_written = 0
     for meta in metas:
@@ -1090,9 +1244,24 @@ def run(mapping_path: str, output_prefix: str,
         fiscal_year_end: int = FISCAL_YEAR_END_DEFAULT,
         skip_preload: bool = False,
         latest_quarter: Optional[str] = None,
-        split_size: int = SPLIT_SIZE):
+        split_size: int = SPLIT_SIZE,
+        cache_dir: Optional[str] = None,
+        force_refresh: Optional[str] = ""):
 
-    logger.info("=== FEMR NetSuite Report Generator (v12) ===")
+    logger.info("=== FEMR NetSuite Report Generator (v13) ===")
+
+    # Cache config
+    # force_refresh: None = disabled entirely; "" = all sequences; "SEQ" = one sequence
+    if cache_dir:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
+        if force_refresh == "":
+            logger.info("Cache dir: %s  (force-refresh ALL sequences)", cache_dir)
+        elif force_refresh is not None:
+            logger.info("Cache dir: %s  (force-refresh: %s)", cache_dir, force_refresh)
+        else:
+            logger.info("Cache dir: %s  (normal — use cache when quarter matches)", cache_dir)
+    else:
+        logger.info("Cache: DISABLED (no --cache-dir)")
 
     # Detect latest quarter with data (unless overridden via --latest-quarter)
     if latest_quarter is None:
@@ -1114,9 +1283,13 @@ def run(mapping_path: str, output_prefix: str,
         # Single-sequence mode: skip preload (just one metadata call)
         wb = Workbook()
         wb.remove(wb.active)
+        seq = registry[0]["sequence"]
+        seq_force = force_refresh == "" or force_refresh == seq
         for s in registry:
             process_sequence(wb, s, fiscal_years, workers,
-                             preloaded_metadata=None, latest_quarter=latest_quarter)
+                             preloaded_metadata=None, latest_quarter=latest_quarter,
+                             cache_dir=cache_dir, fiscal_year_end=fiscal_year_end,
+                             force_refresh=seq_force)
         wb.save(output_prefix)
         _patch_chart_axes(output_prefix)
         logger.info("Saved %s", output_prefix)
@@ -1161,8 +1334,12 @@ def run(mapping_path: str, output_prefix: str,
             for i, s in enumerate(chunk, 1):
                 global_i = chunk_idx * split_size + i
                 logger.info("[%d/%d] %s (%s)", global_i, len(seqs), s["sequence"], group)
+                seq_force = force_refresh == "" or force_refresh == s["sequence"]
                 n = process_sequence(wb, s, fiscal_years, workers, preloaded,
-                                     latest_quarter=latest_quarter)
+                                     latest_quarter=latest_quarter,
+                                     cache_dir=cache_dir,
+                                     fiscal_year_end=fiscal_year_end,
+                                     force_refresh=seq_force)
                 total_tabs += n
                 if i % 10 == 0:
                     wb.save(fname)
@@ -1195,6 +1372,13 @@ if __name__ == "__main__":
                         help="Override auto-detected latest quarter e.g. 'Q2' (also set --fy-end)")
     parser.add_argument("--split-size", type=int, default=SPLIT_SIZE,
                         help=f"Max tabs per output file (default {SPLIT_SIZE}). Groups under this stay as one file.")
+    parser.add_argument("--cache-dir", default=None,
+                        help="Directory to store/read per-sequence JSON cache files. "
+                             "Cache is used when the latest fiscal quarter matches the cached quarter.")
+    parser.add_argument("--force-refresh", nargs="?", const="", default=None,
+                        metavar="SEQUENCE",
+                        help="Ignore cache. No argument = refresh all sequences. "
+                             "With SEQUENCE = refresh that one sequence only.")
     args = parser.parse_args()
 
     if args.sequence and not args.output.endswith(".xlsx"):
@@ -1208,4 +1392,6 @@ if __name__ == "__main__":
         fiscal_year_end=args.fy_end,
         skip_preload=args.skip_preload,
         latest_quarter=args.latest_quarter,
-        split_size=args.split_size)
+        split_size=args.split_size,
+        cache_dir=args.cache_dir,
+        force_refresh=args.force_refresh)

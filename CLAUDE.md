@@ -7,7 +7,9 @@ multi-tab Excel workbooks matching the FEMR Export Template.
 
 **Client:** NextFlex (Shoma Sinha PM, Josh Grapani tech lead, Taylor Bui NetSuite admin)
 **Dev:** Atul Kumar (Daden.dev) — Claude sessions managed by Rahul (rahul@daden.dev)
-**Active script:** `scripts/femr_netsuite_report_12.py` (always the highest-numbered file in scripts/)
+**Active script:** `scripts/femr_netsuite_report_14.py`
+
+**NOTE:** v13 exists (local JSON cache feature) but is NOT yet in production — needs dedicated testing. v14 is built from v12 + chart fixes and is the current production script. Do NOT use v13 for client runs until explicitly promoted.
 
 ---
 
@@ -78,10 +80,13 @@ The files are the source of truth. Summaries can be wrong or incomplete.
 
 | Issue | Status | Action |
 |-------|--------|--------|
-| EWD014 group | OGA in mapping, Josh says WFD | Wait for Taylor's updated GROUP MAPPING (post 2026-04-22) |
-| OGA047 missing | Not in SEQUENCE sheet at all | Josh/Taylor must add to GROUP MAPPING — data gap, not script bug |
-| 2ADP099 R1099 | Invalid per Taylor | Will be cleaned up in NetSuite after 2026-04-22 meeting |
-| Pre-FY2020 cumulative | **IMPLEMENTED in v12** — fetches FY2016-2019 and seeds Q1 FY20 opening balance | Done |
+| EWD014 group | **RESOLVED** — moved to WFD in GROUP MAPPING, WFD re-run done (28 tabs) | Done |
+| OGA047 missing | **RESOLVED** — added to GROUP MAPPING, OGA re-run done (47 tabs) | Done |
+| 2ADP099 R1099 | Invalid per Taylor | Will be cleaned up in NetSuite — not a script bug |
+| Pre-FY2020 cumulative | **IMPLEMENTED in v12+** — fetches FY2016-2019, seeds Q1 FY20 | Done |
+| CC007 R960011 tab | **RESOLVED** — Josh confirmed 960011 is now child of rollup 4006. 1 tab correct. | Done |
+| Chart legend overlap | **FIXING IN v14** — legend → right, x-axis stays bottom when Y negative | In progress |
+| ADP 151-200 incomplete | Died mid-run (132K file). ADP 201-246 missing. | Re-run needed with v14 |
 
 ---
 
@@ -101,27 +106,24 @@ Always use `venv/shoma/bin/python` — never system Python.
 
 ---
 
-## Run Commands (v12 — current)
+## Run Commands (v14 — current)
 
 ```bash
-# Single sequence test (always run this first before a group run)
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --sequence 2ADP001 -o test_v12_2ADP001.xlsx --skip-preload
+# Single sequence test (always run first before a group run)
+venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --sequence 2ADP001 -o test_v14_2ADP001.xlsx --skip-preload
 
 # Single group
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group WFD -o femr_v12 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group Internal -o femr_v12 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group Comml -o femr_v12 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group OGA -o femr_v12 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group ADP -o femr_v12 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group WFD -o femr_v14 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group Internal -o femr_v14 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group Comml -o femr_v14 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group OGA -o femr_v14 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group ADP -o femr_v14 --workers 40
 
 # All groups overnight
-nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py -o femr_v12 --workers 40 > /tmp/v12_full.log 2>&1 &
-
-# Verify split (use this to test file splitting logic — not for real output)
-venv/shoma/bin/python -u scripts/femr_netsuite_report_12.py --group WFD -o /tmp/test_split --split-size 5 --workers 40
+nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py -o femr_v14 --workers 40 > /tmp/v14_full.log 2>&1 &
 
 # Monitor a background run
-tail -f /tmp/v12_wfd.log
+tail -f /tmp/v14_full.log
 ps aux | grep femr_netsuite_report | grep -v grep
 ```
 
@@ -139,10 +141,10 @@ ps aux | grep femr_netsuite_report | grep -v grep
 
 | Group | Expected tabs | Files | Notes |
 |-------|--------------|-------|-------|
-| WFD | ~27 | 1 | EWD014 currently excluded (waiting for mapping fix) |
-| Internal | ~37 | 1 | |
-| Comml | ~42 | 1 | CC007 = 2 tabs (R4006 + R960011) |
-| OGA | ~46 | 1 | OGA047 missing (data gap, not bug) |
-| ADP | ~247 | 5 | 001-050, 051-100, 101-150, 151-200, 201-247 |
+| WFD | 28 | 1 | EWD014 now included (mapping fixed 2026-04-24) |
+| Internal | 37 | 1 | |
+| Comml | ~42 | 1 | CC007 = 1 tab now (R960011 gone — confirm with Josh) |
+| OGA | 47 | 1 | OGA047 now included (mapping fixed 2026-04-24) |
+| ADP | ~246 | 5 | 001-050, 051-100, 101-150, 151-200, 201-246 |
 
 If tab count is off by more than 2, investigate before sending to client.
