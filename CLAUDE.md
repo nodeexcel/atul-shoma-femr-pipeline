@@ -7,9 +7,9 @@ multi-tab Excel workbooks matching the FEMR Export Template.
 
 **Client:** NextFlex (Shoma Sinha PM, Josh Grapani tech lead, Taylor Bui NetSuite admin)
 **Dev:** Atul Kumar (Daden.dev) — Claude sessions managed by Rahul (rahul@daden.dev)
-**Active script:** `scripts/femr_netsuite_report_14.py`
+**Active script:** `scripts/femr_netsuite_report_15.py`
 
-**NOTE:** v13 exists (local JSON cache feature) but is NOT yet in production — needs dedicated testing. v14 is built from v12 + chart fixes and is the current production script. Do NOT use v13 for client runs until explicitly promoted.
+**NOTE:** v13 exists (local JSON cache feature) but is NOT yet in production — needs dedicated testing. v15 is the current production script (v14 + legend outside plot area + quarter labels below grid). Do NOT use v13 for client runs until explicitly promoted.
 
 ---
 
@@ -85,8 +85,8 @@ The files are the source of truth. Summaries can be wrong or incomplete.
 | 2ADP099 R1099 | Invalid per Taylor | Will be cleaned up in NetSuite — not a script bug |
 | Pre-FY2020 cumulative | **IMPLEMENTED in v12+** — fetches FY2016-2019, seeds Q1 FY20 | Done |
 | CC007 R960011 tab | **RESOLVED** — Josh confirmed 960011 is now child of rollup 4006. 1 tab correct. | Done |
-| Chart legend overlap | **FIXING IN v14** — legend → right, x-axis stays bottom when Y negative | In progress |
-| ADP 151-200 incomplete | Died mid-run (132K file). ADP 201-246 missing. | Re-run needed with v14 |
+| Chart legend overlap | **FIXED IN v15** — legend outside plot area (overlay=False), right side, crosses=min, tickLblPos=low | Done |
+| ADP incomplete | **RESOLVED** — all 5 files generated on server, 247 tabs verified | Done |
 
 ---
 
@@ -106,24 +106,24 @@ Always use `venv/shoma/bin/python` — never system Python.
 
 ---
 
-## Run Commands (v14 — current)
+## Run Commands (v15 — current)
 
 ```bash
 # Single sequence test (always run first before a group run)
-venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --sequence 2ADP001 -o test_v14_2ADP001.xlsx --skip-preload
+venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --sequence 2ADP001 -o test_v15.xlsx --skip-preload
 
 # Single group
-venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group WFD -o femr_v14 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group Internal -o femr_v14 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group Comml -o femr_v14 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group OGA -o femr_v14 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py --group ADP -o femr_v14 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group WFD -o femr_v15 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group Internal -o femr_v15 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group Comml -o femr_v15 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group OGA -o femr_v15 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group ADP -o femr_v15 --workers 40
 
 # All groups overnight
-nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_14.py -o femr_v14 --workers 40 > /tmp/v14_full.log 2>&1 &
+nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py -o femr_v15 --workers 40 > /tmp/v15_full.log 2>&1 &
 
 # Monitor a background run
-tail -f /tmp/v14_full.log
+tail -f /tmp/v15_full.log
 ps aux | grep femr_netsuite_report | grep -v grep
 ```
 

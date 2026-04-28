@@ -25,6 +25,7 @@ When you share an email with Claude:
 | 2026-04-22 | Josh + Taylor | Post-meeting mapping update (PENDING) | [→ Awaited](#awaited-communications) |
 | 2026-04-24 | Josh Grapani | Confirmed EWD014→WFD and OGA047 data | [→ Apr 24 Mapping](#april-24-2026--josh-grapani-mapping-confirmation) |
 | 2026-04-24 | Josh Grapani | CC007 confirmation + ADP review feedback | [→ Apr 24 ADP Feedback](#april-24-2026--josh-grapani-adp-review-feedback) |
+| 2026-04-28 | Josh + Shoma + Atul | Deployment planning meeting — web app, shared folder, NetSuite, API auth, chart fix | [→ Apr 28 Meeting](#april-28-2026--deployment-planning-meeting) |
 
 ---
 
@@ -167,6 +168,65 @@ When you share an email with Claude:
 - `chart.legend.position = "r"` in `_add_line_chart()`
 - In `_patch_chart_axes()`: change `<crosses val="autoZero" />` → `<crosses val="min" />` in catAx replacement XML
 - 2ADP001/2ADP022: investigate before coding fix
+
+---
+
+## April 28, 2026 — Deployment Planning Meeting
+
+**Type:** Video meeting
+**Participants:** Josh Grapani, Shoma Sinha, Atul Kumar
+
+**Raw content / key quotes:**
+> "Convert it in that [web app] because this is too much like — they will not know."
+
+> "For running the script they will need to run it on a system... a local machine or a virtual server."
+
+> "The shared folder — either it is from OneDrive or from Google Drive — those places are just for placing the files. They cannot run any application in it."
+
+> "I will fix the remaining thing in the script and I will share the script with you with a deep and detailed documentation, how to set it up and run it."
+
+> "For the charts — the quarter values are always on the zero line... if ever we can make it like this [reference image] — it's outside the grid, so it doesn't interfere with any values of the axis."
+
+> "For the API of the report, can we have an authentication on that? There's no authentication on the API — maybe we can set it up?"
+
+> "Go through NetSuite — don't kill yourself — I'm confident this plan is better."
+
+> "Share the files on the shared folder instead of sending in the email."
+
+**Key decisions made:**
+
+1. **Deployment plan agreed:**
+   - Atul puts BOTH scripts (console + web app) + documentation in the external shared folder (Jason Peabody's invite)
+   - IT team at NextFlex decides where to actually host/run from — we give them everything they need
+   - Script runs on local machine or virtual server; shared folder is just storage
+   
+2. **Web app confirmed:** Atul will convert the script to a web app (same pattern as contracting transformation app) — user selects project type, background job runs, live logs visible, download files when done.
+
+3. **NetSuite File Cabinet:** Just file storage, cannot run Python. Atul to do quick check but consensus is it won't work. IT team meeting is the real path.
+
+4. **API authentication:** Oracle API endpoints currently have zero authentication. Josh wants credentials added. Must be done at Oracle platform level, not in Python script. Follow-up meeting planned — Josh to give Atul access to Oracle platform.
+
+5. **Chart — new remaining issue:** Quarter labels sit on the zero line inside the grid area. Josh wants them pushed outside/below the grid so they don't interfere with chart content. He showed a reference image where labels are cleanly outside the plot area. (This is separate from v14 fixes: legend→right, crosses=min.)
+
+6. **2ADP022:** Atul confirmed transient API failure; new files will have correct values. Josh to review new files in shared folder.
+
+7. **Files delivery:** From now on, share generated Excel files in the shared folder (not email).
+
+8. **Shared folder access:** Atul received invite from Jason Peabody, accepted, created account. ✅
+
+9. **NetSuite production access:** Josh gave Atul production access during the meeting. ✅
+
+**Action items:**
+- [ ] Atul: Fix chart — quarter labels pushed outside/below grid area (not on zero line)
+- [ ] Atul: Build web app version of the script
+- [ ] Atul: Upload v14 Excel files + both scripts + documentation to shared folder
+- [ ] Atul: Explore NetSuite file cabinet for Python hosting (quick check, low priority)
+- [ ] Josh: Schedule follow-up meeting on Oracle API authentication
+- [ ] Josh: Give Atul access to Oracle platform for authentication work
+
+**Script impact:**
+- Chart: need to push catAx (X-axis / quarter labels) below the plot area — `tickLblPos` set to `"low"` in catAx XML patch. This keeps labels outside the grid regardless of Y-axis range.
+- Web app: new Flask/FastAPI wrapper around existing script logic (background job, SSE log streaming, download endpoint)
 
 ---
 
