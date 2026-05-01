@@ -7,9 +7,9 @@ multi-tab Excel workbooks matching the FEMR Export Template.
 
 **Client:** NextFlex (Shoma Sinha PM, Josh Grapani tech lead, Taylor Bui NetSuite admin)
 **Dev:** Atul Kumar (Daden.dev) — Claude sessions managed by Rahul (rahul@daden.dev)
-**Active script:** `scripts/femr_netsuite_report_15.py`
+**Active script:** `scripts/femr_netsuite_report_16.py`
 
-**NOTE:** v13 exists (local JSON cache feature) but is NOT yet in production — needs dedicated testing. v15 is the current production script (v14 + legend outside plot area + quarter labels below grid). Do NOT use v13 for client runs until explicitly promoted.
+**NOTE:** v13 exists (local JSON cache feature) but has been **permanently shelved** — Josh confirmed data refreshes daily so caching would serve stale data (2026-04-29). Do NOT use v13. v16 is current (v15 + OAuth Bearer token auth on all API calls).
 
 ---
 
@@ -87,6 +87,7 @@ The files are the source of truth. Summaries can be wrong or incomplete.
 | CC007 R960011 tab | **RESOLVED** — Josh confirmed 960011 is now child of rollup 4006. 1 tab correct. | Done |
 | Chart legend overlap | **FIXED IN v15** — legend outside plot area (overlay=False), right side, crosses=min, tickLblPos=low | Done |
 | ADP incomplete | **RESOLVED** — all 5 files generated on server, 247 tabs verified | Done |
+| Oracle API auth | **IMPLEMENTED IN v16** — OAuth client_credentials, Bearer token, auto-refresh. Credentials in .env | Done |
 
 ---
 
@@ -106,24 +107,30 @@ Always use `venv/shoma/bin/python` — never system Python.
 
 ---
 
-## Run Commands (v15 — current)
+## Run Commands (v16 — current)
+
+**Credentials must be in environment before running:**
+```bash
+# Load credentials (or set them in shell environment)
+set -a && source .env && set +a
+```
 
 ```bash
 # Single sequence test (always run first before a group run)
-venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --sequence 2ADP001 -o test_v15.xlsx --skip-preload
+venv/shoma/bin/python -u scripts/femr_netsuite_report_16.py --sequence 2ADP001 -o test_v16.xlsx --skip-preload
 
 # Single group
-venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group WFD -o femr_v15 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group Internal -o femr_v15 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group Comml -o femr_v15 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group OGA -o femr_v15 --workers 40
-venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py --group ADP -o femr_v15 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_16.py --group WFD -o femr_v16 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_16.py --group Internal -o femr_v16 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_16.py --group Comml -o femr_v16 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_16.py --group OGA -o femr_v16 --workers 40
+venv/shoma/bin/python -u scripts/femr_netsuite_report_16.py --group ADP -o femr_v16 --workers 40
 
 # All groups overnight
-nohup venv/shoma/bin/python -u scripts/femr_netsuite_report_15.py -o femr_v15 --workers 40 > /tmp/v15_full.log 2>&1 &
+nohup bash -c 'set -a && source .env && set +a && venv/shoma/bin/python -u scripts/femr_netsuite_report_16.py -o femr_v16 --workers 40' > /tmp/v16_full.log 2>&1 &
 
 # Monitor a background run
-tail -f /tmp/v15_full.log
+tail -f /tmp/v16_full.log
 ps aux | grep femr_netsuite_report | grep -v grep
 ```
 

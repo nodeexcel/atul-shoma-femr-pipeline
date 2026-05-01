@@ -26,6 +26,10 @@ When you share an email with Claude:
 | 2026-04-24 | Josh Grapani | Confirmed EWD014→WFD and OGA047 data | [→ Apr 24 Mapping](#april-24-2026--josh-grapani-mapping-confirmation) |
 | 2026-04-24 | Josh Grapani | CC007 confirmation + ADP review feedback | [→ Apr 24 ADP Feedback](#april-24-2026--josh-grapani-adp-review-feedback) |
 | 2026-04-28 | Josh + Shoma + Atul | Deployment planning meeting — web app, shared folder, NetSuite, API auth, chart fix | [→ Apr 28 Meeting](#april-28-2026--deployment-planning-meeting) |
+| 2026-04-29 | Shoma Sinha | Handover request — script + docs to shared folder, Josh to cover NSAW upload | [→ Apr 29 Handover](#april-29-2026--shoma-sinha-handover-request) |
+| 2026-04-29 | Atul + Josh | EWD014 confirmed, v15 chart approved, caching rejected, two separate handover docs needed | [→ Apr 29 Call](#april-29-2026--atul--josh-meeting-video-call) |
+| 2026-04-29 | Josh + Atul | Oracle API authentication implemented — client ID + secret shared, access token verified | [→ Apr 29 Auth](#april-29-2026--oracle-api-authentication) |
+| 2026-04-29/30 | Josh + Shoma | v15 review: Available Funds wrong on 28 ADP sequences (data timing issue), 2ADP061 G&A issue, files must go to NextFlex shared space | [→ Apr 29-30 Review](#april-2930-2026--josh-v15-file-review--available-funds-issues) |
 
 ---
 
@@ -227,6 +231,200 @@ When you share an email with Claude:
 **Script impact:**
 - Chart: need to push catAx (X-axis / quarter labels) below the plot area — `tickLblPos` set to `"low"` in catAx XML patch. This keeps labels outside the grid regardless of Y-axis range.
 - Web app: new Flask/FastAPI wrapper around existing script logic (background job, SSE log streaming, download endpoint)
+
+---
+
+## April 29, 2026 — Shoma Sinha Handover Request
+
+**Type:** Email (group thread)
+**Participants:** Shoma Sinha, Josh Grapani, Atul Kumar
+
+**Raw content (verbatim):**
+> Hi Guys.
+>
+> @Atul Kumar Pls put the script in the external folder and put the documentation on how to connect the script and run it, so the output can be generated
+> @Josh Grapani; pls create script on how excel file will be stored in external folder, script run and output generated which then needs to be upload in NSAW.
+>
+> Lets have the clean documentation as if we are handing the process.
+>
+> Regards
+> Shoma
+
+**Decisions made:**
+1. **Atul's deliverables** — upload to external shared folder (Jason Peabody's):
+   - `femr_netsuite_report_15.py` (active script)
+   - `requirements_script.txt` (dependencies)
+   - `docs/FEMR_SCRIPT_GUIDE.md` (setup + run documentation)
+   - All 9 v15 output Excel files
+2. **Josh's deliverables** — Josh to create a process script/doc covering:
+   - How the Excel file gets stored in the external folder
+   - How the script is run
+   - How the output is uploaded to NSAW
+3. **Goal:** Clean end-to-end handover documentation as if the process is being handed off permanently.
+4. **NSAW** — output Excel files are uploaded to NSAW after generation. Josh owns this step.
+
+**Action items:**
+- [x] Atul: v15 script complete
+- [x] Atul: FEMR_SCRIPT_GUIDE.md written
+- [ ] Atul: Upload script + requirements_script.txt + FEMR_SCRIPT_GUIDE.md to shared folder
+- [ ] Atul: Upload all 9 v15 Excel files to shared folder
+- [ ] Josh: Write process doc for external folder → script run → NSAW upload
+
+---
+
+## April 29, 2026 — Atul + Josh Meeting (video call)
+
+**Type:** Video call
+**Participants:** Josh Grapani, Atul Kumar
+
+**Key quotes (verbatim from transcript):**
+
+> "You said EWD014 has no data, right? No financial data. If we filter, if we check on the previous years, the posting is on 2018. There are no postings after that. That's why it has no values in this one but has values on the cumulative going forward."
+
+> "I saw the chart and it seems okay now Atul. This is what we want. Very nice."
+
+> "How long or how much time do they need to generate the export files? Say, the whole projects."
+
+> "When generating export files, because this is Diane's one question, can they select dates as well as ranges of sequence number? Like, for example, I only want ADP 001 to ADP 0010. Can they do that?"
+
+> "But my view that the data is refreshing every day. When they go live, they will have postings on transactions. So, the actuals would have postings. Also, for the budgets, when they complete the budget files upload, it will also change. So, if you save the data locally... No, it will be a stale data."
+
+> "On Shoma's email, when we do the documentation, I need the first part on your end, which is the transformation script for the contracting file. After that, I will do my part on the load on NSAW."
+
+> "Will you prepare it separately? Two files? One for each script?"
+
+> "Not this export script. Because it's all yours, the export script." [referring to the contracting transform script being a separate doc]
+
+**Key decisions / findings:**
+
+1. **EWD014 no financial data — CONFIRMED EXPECTED**: Last posting was 2018. No FY2020+ data. The main quarterly table is empty but cumulative section correctly shows historical values from pre-FY2020 data. Not a bug. ✅
+
+2. **v15 chart — APPROVED by Josh**: "I saw the chart and it seems okay now. This is what we want. Very nice." Chart fixes in v15 are final. ✅
+
+3. **Run time — communicated to Josh**: ADP ~8-9 hours, each other group ~1.5-2 hours. Josh noted this may be a question from NextFlex IT team.
+
+4. **Sequence/date range selection — NOT YET IMPLEMENTED**: Diane (NextFlex) asked if users can select a date range or sequence range (e.g. ADP001–ADP010). Currently only group-level selection exists. Atul confirmed and committed to adding sequence-level selection as a future feature.
+
+5. **Local data caching (v13) — REJECTED by Josh**: Atul proposed caching API data locally to avoid re-pulling. Josh rejected: data refreshes daily (actuals from transactions, budgets from uploads). A local cache would be stale. **Decision: always pull directly from API. v13 cache approach should NOT be promoted to production.**
+
+6. **Two separate handover docs required**:
+   - **Doc A (Atul):** Transformation script for the contracting file (the first/pipeline task — NOT the FEMR export script)
+   - **Doc B (already done):** FEMR export script guide (`FEMR_SCRIPT_GUIDE.md`)
+   - **Doc C (Josh):** NSAW upload process (Josh's part — after Atul's docs)
+   - Josh will review both docs from Atul before adding his NSAW section
+
+**Action items:**
+- [x] Atul: Write handover doc for the contracting transformation script — `docs/FEMR_TRANSFORM_GUIDE.md` created 2026-04-29 ✅
+- [ ] Atul: Upload femr_handover_v15.zip to shared folder
+- [ ] Atul: Future feature — add sequence-level selection to the web app/script
+- [ ] Josh: Write NSAW upload process doc after Atul's docs are sent
+
+---
+
+## April 29, 2026 — Oracle API Authentication
+
+**Type:** Follow-up to April 28 meeting (recording started late)
+**Participants:** Josh Grapani, Atul Kumar
+
+**What happened:**
+- Josh secured the Oracle APEX API endpoints (previously had zero authentication)
+- Josh shared the client ID and client secret with Atul
+- Atul tested credentials and successfully generated an access token ✅
+
+**Status:** Authentication is working. Script needs to be updated to include OAuth token in API requests.
+
+**Decisions made:**
+1. Oracle APEX endpoints are now OAuth-secured — unauthenticated calls will fail going forward
+2. Script must obtain an access token using client credentials (client ID + secret) before making API calls
+3. Credentials are NOT to be hardcoded in the script — must be passed via environment variable or config
+
+**Action items:**
+- [x] Atul: Update script to v16 — add OAuth token fetch + Bearer token header on all API requests ✅
+- [x] Atul: Add ORACLE_CLIENT_ID and ORACLE_SECRET_KEY to `.env.example` ✅
+- [x] Atul: Test v16 single sequence — confirmed working (test_v16.xlsx generated 2026-04-29) ✅
+- [x] Atul: Update `FEMR_SCRIPT_GUIDE.md` with credential setup instructions ✅
+- [x] Atul: Update `FEMR_HANDOVER.md` with credential setup for Docker deployment ✅
+- [ ] Atul: Add ORACLE_CLIENT_ID + ORACLE_SECRET_KEY to docker-compose.yml + docker-compose.prod.yml env sections
+- [ ] Atul: Run all groups with v16 to generate fresh output files
+
+**Script impact:**
+- New function to fetch OAuth token (POST to token endpoint with client_id + client_secret)
+- All API calls to `/femr/netamount/` and `/mv_femr_report/` need `Authorization: Bearer <token>` header
+- Token likely has an expiry — may need refresh logic if a full run exceeds token lifetime
+
+---
+
+## April 29–30, 2026 — Josh v15 File Review + Available Funds Issues
+
+**Type:** Email thread
+**Participants:** Josh Grapani, Atul Kumar, Shoma Sinha
+
+**Thread summary (verbatim key quotes):**
+
+> Josh: "I've reviewed the files and found some issues on the values. Most of the issues came from the Available Funds field. Earlier this week, we changed the logic for the available funds and other fields that are involved in the calculation, especially for ADPs. After the change there are some errors on the logic but were corrected immediately after. Maybe during the generation of export files, the script still uses the dataset that was not updated; that is why we have so many discrepancies."
+
+> Josh: "If you can pls re-generate the export file for these sequences and I will check it out again."
+
+> Josh: "for 2ADP061, pls check the G&A 5991 Budgeted FYE 9/30/2026 columns. It should not have any values."
+
+> Josh: "Thanks Atul. Can you pls put this into our Onedrive too?"
+
+> Shoma: "Josh, Why are u hving all files in one drive? I hv given very clear instructions tat it should be nextflex shared space. Can we pls move everything to nextflex shared space; there is a reason why we all got access."
+
+> Josh: "I dont have any access to that drive. Please let me have access." → "Apologies. I see the folder now."
+
+> Atul: "Sure, I'll regenerate the files and check for the issues."
+
+**Root cause of Available Funds discrepancies:**
+Josh changed the NetSuite logic for Available Funds (and related calculation fields) earlier in the week. There were temporary errors in the logic that were corrected immediately after. The v15 run pulled data during or just after this transition — some sequences still show the old/incorrect values. **This is a data timing issue, not a script bug.** Re-running with v16 will pull the corrected data.
+
+**Affected sequences — Josh's expected values:**
+
+| Sequence | Expected Available Funds |
+|----------|------------------------|
+| 2ADP001 | $0 |
+| 2ADP009 | $8,391.50 |
+| 2ADP020 | -$0.37 |
+| 2ADP033 | $44,301.42 |
+| 2ADP035 | $0 |
+| 2ADP054 | $0 |
+| 2ADP057 | $0 |
+| 2ADP058 | $140,847.00 |
+| 2ADP059 | $0 |
+| 2ADP061 | $0 (+ G&A 5991 Budgeted FYE 9/30/2026 must be blank) |
+| 2ADP062 | $429,519.36 |
+| 2ADP064 | $515,963.00 |
+| 2ADP066 | $0 |
+| 2ADP068 | $0 |
+| 2ADP074 | $0 |
+| 2ADP078 | $0.01 |
+| 2ADP080 | $0 |
+| 2ADP083 | $0 (listed twice — second entry shows $14,695.00, likely a typo — clarify with Josh) |
+| 2ADP087 | $0 |
+| 2ADP090 | $0 |
+| 2ADP092 | $0 |
+| 2ADP098 | $1,265,150.33 |
+| 2ADP103 | $154,183.00 |
+| 2ADP110 | $0 |
+| 2ADP117 | $0 |
+| 2ADP119 | $7,603,614.00 |
+| 2ADP125 | $0 |
+| 2ADP129 | $881,152.00 |
+
+**Decisions made:**
+1. **Available Funds discrepancies** — data timing issue (NetSuite logic was mid-correction during v15 run). Fix: re-run affected sequences with v16 to pull corrected data. Not a script bug.
+2. **2ADP061 G&A 5991 Budgeted FYE 9/30/2026** — must be blank. Investigate why script is pulling values there.
+3. **File delivery location** — Shoma confirmed: NextFlex shared space only (not OneDrive). Josh now has access.
+4. **2ADP083 conflict** — Josh listed it twice with different values ($0 and $14,695.00). Need clarification.
+5. **Authentication** — set up during call, v16 script now uses OAuth Bearer token.
+
+**Action items:**
+- [x] Atul: Re-run all groups with v16 — all 9 files generated and verified ✅
+- [x] Atul: Verify Available Funds for all 27 sequences — all match Josh's expected values ✅
+- [x] Atul: 2ADP061 G&A 5991 Budgeted FY2026 — already blank in v16 ✅
+- [x] Atul: Reply sent to Josh with results + 2ADP083 clarification request + 2ADP099 explanation ✅
+- [ ] Atul: Upload all files to NextFlex shared space once Josh confirms 2ADP083
+- [ ] Josh: Confirm 2ADP083 correct value ($0 or $14,695.00)
 
 ---
 

@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     'transform',
+    'femr_export',
 ]
 
 MIDDLEWARE = [
@@ -101,6 +102,21 @@ STORAGES = {
 # ─── File uploads ─────────────────────────────────────────────────────────────
 MAX_UPLOAD_SIZE = int(os.environ.get('MAX_UPLOAD_SIZE_MB', 50)) * 1024 * 1024  # default 50 MB
 
+# ─── FEMR Export ──────────────────────────────────────────────────────────────
+# Root of the repo — scripts/ and docs/ live here.
+# Override with FEMR_REPO_ROOT env var when running inside Docker.
+FEMR_REPO_ROOT = Path(os.environ.get('FEMR_REPO_ROOT', BASE_DIR.parent))
+FEMR_SCRIPT = FEMR_REPO_ROOT / 'scripts' / 'femr_netsuite_report_15.py'
+FEMR_OUTPUT_DIR = BASE_DIR / 'media' / 'femr_outputs'
+FEMR_JOB_LOG_DIR = BASE_DIR / 'logs' / 'femr_jobs'
+
+# ─── Celery ───────────────────────────────────────────────────────────────────
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = TIME_ZONE
+
 # ─── Logging ──────────────────────────────────────────────────────────────────
 LOG_DIR = BASE_DIR / 'logs'
 LOG_DIR.mkdir(exist_ok=True)
@@ -156,6 +172,12 @@ LOGGING = {
         },
         # Transform app — all sub-loggers (transform.views, transform.services, …)
         'transform': {
+            'handlers': ['console', 'file_app'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        # FEMR export app
+        'femr_export': {
             'handlers': ['console', 'file_app'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False,

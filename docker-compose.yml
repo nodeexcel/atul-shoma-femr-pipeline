@@ -1,14 +1,39 @@
 services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
   web:
     build:
       context: .
       target: development
     volumes:
-      - ./src:/app          # live reload: code changes reflected immediately
-      - ./src/media:/app/media  # bind mount — files visible locally under src/media/
+      - ./src:/app
+      - ./src/media:/app/media
+      - ./scripts:/repo/scripts
+      - ./docs:/repo/docs
     ports:
       - "9033:8000"
     user: "${UID}:${GID}"
     env_file: .env
     environment:
       DEBUG: "True"
+    depends_on:
+      - redis
+
+  celery_worker:
+    build:
+      context: .
+      target: development
+    volumes:
+      - ./src:/app
+      - ./src/media:/app/media
+      - ./scripts:/repo/scripts
+      - ./docs:/repo/docs
+    user: "${UID}:${GID}"
+    env_file: .env
+    environment:
+      DEBUG: "True"
+    depends_on:
+      - redis
+    command: celery -A backend worker --loglevel=info --concurrency=5

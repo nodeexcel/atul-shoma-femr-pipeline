@@ -22,6 +22,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY src/ .
+COPY scripts/ /repo/scripts/
+COPY docs/ /repo/docs/
 # Collect static files at build time (requires a dummy SECRET_KEY)
 RUN SECRET_KEY=build-collect-static python manage.py collectstatic --noinput
 EXPOSE 8000
