@@ -3,6 +3,13 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
 
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env.prod
+    volumes:
+      - postgres_prod:/var/lib/postgresql/data
+
   web:
     build:
       context: .
@@ -17,6 +24,7 @@ services:
       - logs_prod:/app/logs
     depends_on:
       - redis
+      - db
     restart: unless-stopped
 
   celery_worker:
@@ -31,9 +39,11 @@ services:
       - logs_prod:/app/logs
     depends_on:
       - redis
+      - db
     restart: unless-stopped
     command: celery -A backend worker --loglevel=info --concurrency=5
 
 volumes:
   media_prod:
   logs_prod:
+  postgres_prod:

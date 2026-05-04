@@ -3,6 +3,18 @@ services:
     image: redis:7-alpine
     restart: unless-stopped
 
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: shoma
+      POSTGRES_USER: shoma
+      POSTGRES_PASSWORD: shoma_dev
+    volumes:
+      - postgres_dev:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+
   web:
     build:
       context: .
@@ -19,8 +31,13 @@ services:
     environment:
       DEBUG: "True"
       FEMR_REPO_ROOT: "/repo"
+      DB_NAME: shoma
+      DB_USER: shoma
+      DB_PASSWORD: shoma_dev
+      DB_HOST: db
     depends_on:
       - redis
+      - db
 
   celery_worker:
     build:
@@ -36,6 +53,14 @@ services:
     environment:
       DEBUG: "True"
       FEMR_REPO_ROOT: "/repo"
+      DB_NAME: shoma
+      DB_USER: shoma
+      DB_PASSWORD: shoma_dev
+      DB_HOST: db
     depends_on:
       - redis
+      - db
     command: celery -A backend worker --loglevel=info --concurrency=5
+
+volumes:
+  postgres_dev:
