@@ -106,7 +106,7 @@ MAX_UPLOAD_SIZE = int(os.environ.get('MAX_UPLOAD_SIZE_MB', 50)) * 1024 * 1024  #
 # Root of the repo — scripts/ and docs/ live here.
 # Override with FEMR_REPO_ROOT env var when running inside Docker.
 FEMR_REPO_ROOT = Path(os.environ.get('FEMR_REPO_ROOT', BASE_DIR.parent))
-FEMR_SCRIPT = FEMR_REPO_ROOT / 'scripts' / 'femr_netsuite_report_15.py'
+FEMR_SCRIPT = FEMR_REPO_ROOT / 'scripts' / 'femr_netsuite_report_16.py'
 FEMR_OUTPUT_DIR = BASE_DIR / 'media' / 'femr_outputs'
 FEMR_JOB_LOG_DIR = BASE_DIR / 'logs' / 'femr_jobs'
 

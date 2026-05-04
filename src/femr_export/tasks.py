@@ -22,9 +22,9 @@ def run_femr_export(self, job_id: int):
     output_dir = settings.FEMR_OUTPUT_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Output prefix: femr_v15_wfd, femr_v15_adp, etc. (or femr_v15 for All)
+    # Output prefix: femr_v16_wfd, femr_v16_adp, etc. (or femr_v16 for All)
     group_slug = job.group.lower() if job.group != 'All' else ''
-    prefix_name = f'femr_v15_{group_slug}' if group_slug else 'femr_v15'
+    prefix_name = f'femr_v16_{group_slug}' if group_slug else 'femr_v16'
     output_prefix = str(output_dir / prefix_name)
 
     job.output_prefix = prefix_name
