@@ -16,8 +16,16 @@ class TransformJob(models.Model):
         (STATUS_FAILED, 'Failed'),
     ]
 
+    FORMAT_EXCEL = 'excel'
+    FORMAT_CSV = 'csv'
+    FORMAT_CHOICES = [
+        (FORMAT_EXCEL, 'Excel (.xlsx)'),
+        (FORMAT_CSV,   'CSV (.csv)'),
+    ]
+
     input_file = models.FileField(upload_to='uploads/')
     output_file = models.FileField(upload_to='outputs/', blank=True)
+    output_format = models.CharField(max_length=10, choices=FORMAT_CHOICES, default=FORMAT_EXCEL)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     error_message = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -38,7 +46,8 @@ class TransformJob(models.Model):
     def complete(self, output_bytes: bytes):
         """Attach output file and mark job as done."""
         stem = os.path.splitext(os.path.basename(self.input_file.name))[0]
-        output_name = f'{stem}_output.xlsx'
+        ext = '.csv' if self.output_format == self.FORMAT_CSV else '.xlsx'
+        output_name = f'output_{stem}{ext}'
         self.output_file.save(output_name, ContentFile(output_bytes), save=False)
         self.status = self.STATUS_DONE
         self.save(update_fields=['output_file', 'status', 'updated_at'])

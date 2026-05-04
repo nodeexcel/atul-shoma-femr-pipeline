@@ -35,6 +35,22 @@
             <div class="form-text">{{ form.input_file.help_text }}</div>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label fw-medium">{{ form.output_format.label }}</label>
+            {% for radio in form.output_format %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio"
+                     name="{{ form.output_format.html_name }}"
+                     id="{{ radio.id_for_label }}"
+                     value="{{ radio.data.value }}"
+                     {% if radio.data.selected %}checked{% endif %}>
+              <label class="form-check-label" for="{{ radio.id_for_label }}">
+                {{ radio.choice_label }}
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+
           <button type="submit" class="btn btn-primary" id="submit-btn">
             <span id="btn-label">Transform</span>
             <span id="btn-spinner" class="spinner-border spinner-border-sm ms-1 d-none" role="status"></span>

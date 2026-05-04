@@ -1,12 +1,23 @@
 from django import forms
 from django.conf import settings
 
+FORMAT_CHOICES = [
+    ('excel', 'Excel (.xlsx)'),
+    ('csv',   'CSV (.csv)'),
+]
+
 
 class UploadForm(forms.Form):
     input_file = forms.FileField(
         label='FEMR Funds Excel File',
         help_text='Upload the FEMR Funds .xlsx workbook.',
         widget=forms.ClearableFileInput(attrs={'accept': '.xlsx'}),
+    )
+    output_format = forms.ChoiceField(
+        label='Output format',
+        choices=FORMAT_CHOICES,
+        initial='excel',
+        widget=forms.RadioSelect,
     )
 
     def clean_input_file(self):

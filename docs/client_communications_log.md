@@ -30,6 +30,9 @@ When you share an email with Claude:
 | 2026-04-29 | Atul + Josh | EWD014 confirmed, v15 chart approved, caching rejected, two separate handover docs needed | [→ Apr 29 Call](#april-29-2026--atul--josh-meeting-video-call) |
 | 2026-04-29 | Josh + Atul | Oracle API authentication implemented — client ID + secret shared, access token verified | [→ Apr 29 Auth](#april-29-2026--oracle-api-authentication) |
 | 2026-04-29/30 | Josh + Shoma | v15 review: Available Funds wrong on 28 ADP sequences (data timing issue), 2ADP061 G&A issue, files must go to NextFlex shared space | [→ Apr 29-30 Review](#april-2930-2026--josh-v15-file-review--available-funds-issues) |
+| 2026-05-01 | Josh + Shoma + Atul | Meeting: v16 files uploaded to NextFlex shared folder; Shoma backup run request; transformation script changes (output-only Excel + CSV support) | [→ May 1 Meeting](#may-1-2026--joshatulshomaatulkumar-meeting) |
+| 2026-05-01/02 | Shoma Sinha | IT team has spun up a server; needs prerequisites list from Atul; Monday 10:30 PST IT meeting, Tuesday script run meeting | [→ IT Server Setup](#may-12-2026--shoma-sinha-it-server-setup) |
+| 2026-05-04 | Atul → Josh | v16 files sent with verification summary, 2ADP083 clarification request, 2ADP099 explanation | [→ May 4 v16 Message](#may-4-2026--atul--josh-v16-files-message) |
 
 ---
 
@@ -425,6 +428,92 @@ Josh changed the NetSuite logic for Available Funds (and related calculation fie
 - [x] Atul: Reply sent to Josh with results + 2ADP083 clarification request + 2ADP099 explanation ✅
 - [ ] Atul: Upload all files to NextFlex shared space once Josh confirms 2ADP083
 - [ ] Josh: Confirm 2ADP083 correct value ($0 or $14,695.00)
+
+---
+
+## May 1, 2026 — Josh/Shoma/Atul Meeting
+
+**Type:** Video meeting (details recalled by Atul — not recorded)
+**Participants:** Josh Grapani, Shoma Sinha, Atul Kumar
+
+**Key points discussed:**
+
+1. **v16 files uploaded to NextFlex shared folder** — Atul shared v16 zip + script during the meeting. All 9 femr_v16_*.xlsx output files + femr_handover_v16.zip are now in the NextFlex shared space. ✅
+
+2. **Shoma's backup run request** — Shoma asked Atul to run the script as a backup so output files are available before her client meeting. Atul confirmed this is already satisfied by the v16 run completed 2026-04-30. No re-run needed.
+
+3. **Transformation script changes requested** (femr_transform.py):
+   - **Remove input tabs from output Excel** — currently the output file carries all original sheets (FEMR Funds, SF270 CA2 Source Data, etc.) alongside the Output tab. New behavior: output Excel must contain ONLY the Output tab.
+   - **Add CSV output support** — script should accept a `--format` parameter (`excel` or `csv`). When `csv` is selected, output is a plain CSV file with only the transformed data.
+   - **Auto-derive output filename** — instead of requiring an explicit `--output` argument, the script should derive the output filename from the input filename: same name with `output_` prefix, extension changes to match format (`.xlsx` or `.csv`). Example: `2026.03 FEMR funds 033126 2025.xlsx` → `output_2026.03 FEMR funds 033126 2025.xlsx` (Excel) or `output_2026.03 FEMR funds 033126 2025.csv` (CSV).
+   - Both Excel and CSV outputs must contain ONLY the output/transformed data — no input tabs, no extra sheets.
+
+**Decisions made:**
+1. Upload of v16 files to NextFlex shared space is complete. ✅
+2. Shoma's backup request is satisfied by yesterday's v16 files. No re-run.
+3. Transformation script to be updated with output-only mode + CSV support + auto-derived filename.
+
+**Action items:**
+- [x] Atul: Upload v16 files to NextFlex shared folder ✅
+- [x] Atul: Create femr_transform_2.py — strip input tabs, add --format excel/csv, auto-derive output filename ✅ 2026-05-03
+- [x] Atul: Update web app transform pipeline (services, forms, model, views, template, migration) ✅ 2026-05-03
+- [ ] Atul: Rebuild femr_transform_handover.zip with femr_transform_2.py + updated FEMR_TRANSFORM_GUIDE.md
+
+---
+
+## May 1/2, 2026 — Shoma Sinha IT Server Setup
+
+**Type:** Email thread
+**Participants:** Shoma Sinha, Atul Kumar, Josh Grapani
+
+**Raw content (verbatim):**
+
+> Hi Atul,
+>
+> I spoke to the IT team, they have spinned off a server for us so we can run the same there. But they need assistance as they have never done this before –
+>
+> We would need to tell them what is the pre requisite they need to bring up before running the script. Could you please send an email to that.
+> Also, will have a meeting with the IT team on Monday to discuss this at 10.30 am pst – pls be available & Josh u too
+> Once they have all this infrastructure we need- then we can have another meeting on Tuesday to get the script running – we will help them so you and Josh will need to be present.
+>
+> Regards
+> Shoma
+
+> Hi @Shoma Sinha, @Josh Grapani
+> Sure, I'll send an email listing all the requisites for the setup.
+> Regards
+> Atul
+
+**Decisions made:**
+1. **Server confirmed** — NextFlex IT team has spun up a dedicated server for running the FEMR export script.
+2. **Prerequisites email** — Atul to send IT team an email listing everything they need to set up before the script can run.
+3. **Monday meeting (2026-05-05, 10:30 AM PST)** — Atul + Josh to meet with IT team to walk through setup.
+4. **Tuesday meeting (2026-05-06)** — Atul + Josh to attend script run meeting with IT team once infrastructure is ready.
+
+**Action items:**
+- [ ] Atul: Send prerequisites email to IT team (Python version, packages, credentials, folder structure, internet access, disk space, run time expectations)
+- [ ] Atul + Josh: Attend Monday 2026-05-05 10:30 AM PST IT setup meeting
+- [ ] Atul + Josh: Attend Tuesday 2026-05-06 script run meeting
+
+---
+
+## May 4, 2026 — Atul → Josh v16 Files Message
+
+**Type:** Email (files already sent, message drafted)
+**Participants:** Atul Kumar → Josh Grapani
+
+**Message sent with v16 files:**
+
+Key points covered:
+1. Available Funds verified — all 27 sequences from Josh's list match expected values to the cent ✅
+2. 2ADP061 G&A 5991 Budgeted FYE 9/30/2026 — confirmed blank ✅
+3. Authentication complete — v16 uses OAuth Bearer token on all API calls ✅
+4. **2ADP083 open question** — Josh listed it twice ($0 and $14,695.00), asked Josh to confirm correct value
+5. **2ADP099 explained** — 2 tabs generated (R1099 + RCore099), both empty due to 401s on invalid Rollup 1099; awaiting Taylor's NetSuite cleanup
+
+**Action items:**
+- [ ] Josh: Confirm 2ADP083 correct Available Funds value ($0 or $14,695.00)
+- [ ] Taylor: Clean up Rollup 1099 in NetSuite (2ADP099)
 
 ---
 

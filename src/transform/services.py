@@ -2,7 +2,7 @@
 FEMR Funds transformation service.
 
 Reads the 'FEMR Funds' sheet from an uploaded workbook and reshapes it into
-a long-format 'Output' sheet with one row per (Sequence, Quarter, Type).
+a long-format Output with one row per (Sequence, Quarter, Type).
 
 Four types per (Sequence, Quarter):
   Committed      – Award Amount column
@@ -13,13 +13,17 @@ Four types per (Sequence, Quarter):
 Quarters are discovered dynamically from row 4 of the FEMR Funds sheet.
 Cells with 'QE M/D/YY' labels are quarter end dates; annual total columns
 ('FYxx Total', 'Total') are skipped automatically.
+
+Output format: 'excel' returns xlsx bytes with Output tab only (no input tabs).
+               'csv' returns UTF-8 CSV bytes.
 """
+import csv
 import io
 import logging
 from collections import defaultdict
 from datetime import datetime
 
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font
 
 logger = logging.getLogger('transform.services')
@@ -140,63 +144,69 @@ def _build_output_rows(sequences: list[str], data: dict, quarters: list[tuple]) 
     return rows
 
 
-def _write_output_sheet(ws_out, output_rows: list[tuple], has_template: bool):
-    """Write output rows into ws_out, clearing stale rows if needed."""
-    if not has_template:
-        bold = Font(bold=True)
-        for col, header in enumerate(['Sequence', 'Qtr Date', 'Type', 'Amount'], 1):
-            ws_out.cell(row=1, column=col, value=header).font = bold
+
+def _to_excel_bytes(output_rows: list[tuple]) -> bytes:
+    """Build a fresh workbook with only the Output tab and return xlsx bytes."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Output'
+
+    bold = Font(bold=True)
+    for col, header in enumerate(['Sequence', 'Qtr Date', 'Type', 'Amount'], 1):
+        ws.cell(row=1, column=col, value=header).font = bold
 
     for i, (seq, qdate, type_name, amount) in enumerate(output_rows, start=2):
-        ws_out.cell(row=i, column=1, value=seq)
-        date_cell = ws_out.cell(row=i, column=2, value=qdate)
+        ws.cell(row=i, column=1, value=seq)
+        date_cell = ws.cell(row=i, column=2, value=qdate)
         date_cell.number_format = 'mm-dd-yy'
-        ws_out.cell(row=i, column=3, value=type_name)
-        ws_out.cell(row=i, column=4, value=amount)
+        ws.cell(row=i, column=3, value=type_name)
+        ws.cell(row=i, column=4, value=amount)
 
-    # Delete stale rows from a larger previous template
-    expected_last = 1 + len(output_rows)
-    if ws_out.max_row > expected_last:
-        ws_out.delete_rows(expected_last + 1, ws_out.max_row - expected_last)
+    last_row = 1 + len(output_rows)
+    ws.auto_filter.ref = f'A1:D{last_row}'
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 14
+    ws.column_dimensions['C'].width = 16
+    ws.column_dimensions['D'].width = 16
 
-    # Auto-filter covering full data range
-    ws_out.auto_filter.ref = f'A1:D{expected_last}'
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.read()
 
 
-def run_transform(input_path: str) -> bytes:
+def _to_csv_bytes(output_rows: list[tuple]) -> bytes:
+    """Serialise output rows to UTF-8 CSV bytes."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['Sequence', 'Qtr Date', 'Type', 'Amount'])
+    for seq, qdate, type_name, amount in output_rows:
+        writer.writerow([seq, qdate.strftime('%m/%d/%Y'), type_name, round(amount, 2)])
+    return buf.getvalue().encode('utf-8')
+
+
+def run_transform(input_path: str, fmt: str = 'excel') -> bytes:
     """
-    Main entry point.  Read the FEMR Funds workbook at *input_path*,
-    regenerate the Output sheet, and return the result as raw xlsx bytes.
+    Read the FEMR Funds workbook at *input_path*, build the output rows,
+    and return the result as bytes in the requested format ('excel' or 'csv').
+    Excel output contains only the Output tab — no input tabs carried over.
     """
-    logger.info("Transform started: %s", input_path)
+    logger.info("Transform started: %s (format=%s)", input_path, fmt)
 
-    # Open twice: data_only for reading values, normal for preserving styles
     wb_values = load_workbook(input_path, data_only=True)
-    wb_out = load_workbook(input_path)
-
     ws_femr = wb_values['FEMR Funds']
     ws_output_template = wb_values['Output'] if 'Output' in wb_values.sheetnames else None
-
-    if 'Output' in wb_out.sheetnames:
-        ws_out = wb_out['Output']
-        # Delete all columns beyond D to remove extra template content (preserves A-D styles)
-        if ws_out.max_column > 4:
-            ws_out.delete_cols(5, ws_out.max_column - 4)
-    else:
-        ws_out = wb_out.create_sheet('Output', 1)
 
     quarters = _discover_quarters(ws_femr)
     sequences = _read_sequences(ws_femr, ws_output_template)
     data = _aggregate_data(ws_femr, sequences, quarters)
     output_rows = _build_output_rows(sequences, data, quarters)
-    _write_output_sheet(ws_out, output_rows, has_template=ws_output_template is not None)
 
     logger.info(
         "Transform complete: %d sequences × %d quarters × 4 types = %d rows",
         len(sequences), len(quarters), len(output_rows),
     )
 
-    buf = io.BytesIO()
-    wb_out.save(buf)
-    buf.seek(0)
-    return buf.read()
+    if fmt == 'csv':
+        return _to_csv_bytes(output_rows)
+    return _to_excel_bytes(output_rows)

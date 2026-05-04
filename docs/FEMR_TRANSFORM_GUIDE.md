@@ -2,18 +2,18 @@
 
 **Client:** NextFlex  
 **Prepared by:** Daden.dev (Atul Kumar)  
-**Script:** `femr_transform.py`  
-**Date:** April 2026  
+**Script:** `femr_transform_2.py`  
+**Date:** May 2026  
 
 ---
 
 ## What the Script Does
 
-Takes a raw **FEMR Funds** Excel file and reshapes its data into a normalized long-format **Output** sheet, ready for use in Power BI, Tableau, or NSAW uploads.
+Takes a raw **FEMR Funds** Excel file and reshapes its data into a normalized long-format output, ready for use in Power BI, Tableau, or NSAW uploads.
 
 **Input:** An `.xlsx` file with a `FEMR Funds` sheet containing quarterly financial data by sequence.
 
-**Output:** The same file saved with an updated `Output` sheet containing four columns:
+**Output:** A new file containing only the transformed data — either an Excel file with a single `Output` sheet, or a CSV file. The original input file is never modified. Output columns:
 
 | Column | Description |
 |--------|-------------|
@@ -48,7 +48,7 @@ Copy the project folder onto your machine. You need at minimum:
 ```
 femr-pipeline/
 ├── scripts/
-│   └── femr_transform.py
+│   └── femr_transform_2.py
 └── requirements_script.txt
 ```
 
@@ -99,13 +99,23 @@ venv\Scripts\activate.bat
 
 ### Run the transformation
 
+The output filename is derived automatically from the input — you do not need to specify it. The output file is saved in the same folder as the input, prefixed with `output_`.
+
+**Excel output (default):**
 ```bash
-python -u scripts/femr_transform.py --input path/to/FEMR_Funds.xlsx --output path/to/output.xlsx
+python -u scripts/femr_transform_2.py --input "2026_03_FEMR_funds.xlsx"
+# Saves: output_2026_03_FEMR_funds.xlsx
 ```
 
-**Example:**
+**CSV output:**
 ```bash
-python -u scripts/femr_transform.py --input "2026_03_FEMR_funds.xlsx" --output "2026_03_FEMR_funds_output.xlsx"
+python -u scripts/femr_transform_2.py --input "2026_03_FEMR_funds.xlsx" --format csv
+# Saves: output_2026_03_FEMR_funds.csv
+```
+
+**Specifying an explicit output path (optional):**
+```bash
+python -u scripts/femr_transform_2.py --input "2026_03_FEMR_funds.xlsx" --output "my_output.xlsx"
 ```
 
 The script prints progress as it runs:
@@ -113,25 +123,27 @@ The script prints progress as it runs:
 ```
 Reading input file...
 Parsing FEMR Funds input...
-  Quarters discovered: 24
-    09/30/2020  (col 5)
-    12/31/2020  (col 8)
+  Quarters discovered: 22
+    06/30/2020  (col 10)
+    09/30/2020  (col 13)
     ...
-  Sequences: 247
-  Expected output rows: 23712
-Writing output file...
-Saved: 2026_03_FEMR_funds_output.xlsx
-Total data rows written: 23712
+  Sequences: 134
+  Expected output rows: 11792
+Writing output file (excel)...
+Saved: output_2026_03_FEMR_funds.xlsx
+Total data rows written: 11792
 ```
 
 ### What to check in the output
 
-Open the output file and verify the `Output` sheet:
+**Excel:** Open the output file — it contains a single `Output` sheet (no original tabs):
 - Column A: sequence codes (e.g. `2ADP001`)
-- Column B: quarter end dates in `MM/DD/YYYY` format
-- Column C: type — must be exactly `Committed`, `Obligated`, `Expended`, or `Remaining Cash`
+- Column B: quarter end dates
+- Column C: type — `Committed`, `Obligated`, `Expended`, or `Remaining Cash`
 - Column D: dollar amounts
-- Row count should match "Total data rows written" from the terminal
+- Row count matches "Total data rows written" from the terminal
+
+**CSV:** Open in Excel or a text editor — same four columns, one row per data point.
 
 ---
 
@@ -153,8 +165,9 @@ The transformation is also available through the web application (no terminal re
 
 1. Navigate to `http://your-server-ip:8000/` (the home page)
 2. Upload the FEMR Funds `.xlsx` file
-3. The app processes it and shows a result page
-4. Click **Download** to get the output file
+3. Select output format: **Excel (.xlsx)** or **CSV (.csv)**
+4. The app processes it and shows a result page
+5. Click **Download** to get the output file
 
 ---
 
@@ -175,16 +188,8 @@ The transformation is also available through the web application (no terminal re
 
 | Option | Description | Example |
 |--------|-------------|---------|
-| `--input` | Path to the input FEMR Funds `.xlsx` file | `--input FEMR_funds.xlsx` |
-| `--output` | Path for the generated output `.xlsx` file | `--output output.xlsx` |
+| `--input` | Path to the input FEMR Funds `.xlsx` file (required) | `--input FEMR_funds.xlsx` |
+| `--format` | Output format: `excel` (default) or `csv` | `--format csv` |
+| `--output` | Output file path (optional — auto-derived if omitted) | `--output my_output.xlsx` |
 
 ---
-
-## Contact
-
-For script issues:  
-**Atul Kumar** — Developer
-
-For data questions (input file format, sequence mapping):  
-**Josh Grapani** — NextFlex Tech Lead  
-**Shoma Sinha** — NextFlex PM

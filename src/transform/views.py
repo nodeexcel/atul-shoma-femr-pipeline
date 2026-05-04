@@ -22,12 +22,16 @@ class UploadView(FormView):
         return ctx
 
     def form_valid(self, form):
-        job = TransformJob.objects.create(input_file=form.cleaned_data['input_file'])
-        logger.info("Job #%s created for file: %s", job.pk, job.input_filename)
+        fmt = form.cleaned_data['output_format']
+        job = TransformJob.objects.create(
+            input_file=form.cleaned_data['input_file'],
+            output_format=fmt,
+        )
+        logger.info("Job #%s created for file: %s (format=%s)", job.pk, job.input_filename, fmt)
 
         try:
             job.mark_processing()
-            output_bytes = run_transform(job.input_file.path)
+            output_bytes = run_transform(job.input_file.path, fmt=fmt)
             job.complete(output_bytes)
             logger.info("Job #%s completed successfully", job.pk)
         except Exception as exc:
