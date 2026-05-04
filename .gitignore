@@ -222,3 +222,6 @@ src/media/uploads
 files/.*xlsx#
 files/*output*xlsx
 files/*test*xlsx
+
+
+.env.prod

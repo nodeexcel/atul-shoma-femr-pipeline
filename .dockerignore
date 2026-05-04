@@ -13,3 +13,4 @@ src/staticfiles/
 src/db.sqlite3
 .git/
 .gitignore
+.env.prod
