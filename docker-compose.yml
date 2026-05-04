@@ -26,7 +26,6 @@ services:
       - ./docs:/repo/docs
     ports:
       - "9033:8000"
-    user: "${UID}:${GID}"
     env_file: .env
     environment:
       DEBUG: "True"
@@ -48,7 +47,6 @@ services:
       - ./src/media:/app/media
       - ./scripts:/repo/scripts
       - ./docs:/repo/docs
-    user: "${UID}:${GID}"
     env_file: .env
     environment:
       DEBUG: "True"
