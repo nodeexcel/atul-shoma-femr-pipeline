@@ -33,6 +33,11 @@ When you share an email with Claude:
 | 2026-05-01 | Josh + Shoma + Atul | Meeting: v16 files uploaded to NextFlex shared folder; Shoma backup run request; transformation script changes (output-only Excel + CSV support) | [→ May 1 Meeting](#may-1-2026--joshatulshomaatulkumar-meeting) |
 | 2026-05-01/02 | Shoma Sinha | IT team has spun up a server; needs prerequisites list from Atul; Monday 10:30 PST IT meeting, Tuesday script run meeting | [→ IT Server Setup](#may-12-2026--shoma-sinha-it-server-setup) |
 | 2026-05-04 | Atul → Josh | v16 files sent with verification summary, 2ADP083 clarification request, 2ADP099 explanation | [→ May 4 v16 Message](#may-4-2026--atul--josh-v16-files-message) |
+| 2026-05-04 | Josh → Atul | 2ADP083 = $0 confirmed (v16 correct); 2ADP099 — keep both tabs, filter by project # not sequence # | [→ May 4 Josh Reply](#may-4-2026--josh-reply-2adp083--2adp099) |
+| 2026-05-04 | Shoma → Atul | Asking if all ADP files generating correctly, needs ADP data run | [→ May 4 Shoma ADP](#may-4-2026--shoma-adp-files-query) |
+| 2026-05-04 | Josh + Atul | Quick call: 2ADP099 401 debug — no Oracle permissions issue, Atul to investigate on script side | [→ May 4 2ADP099 Debug Call](#may-4-2026--atul--josh-2adp099-debug-call) |
+| 2026-05-04 | Josh → Atul | 2ADP061 G&A 5991 Budgeted FYE 9/30/2026 — new budget uploads after v15, should now have values | [→ May 4 Josh 2ADP099 Call](#may-4-2026--post-meeting-thread) |
+| 2026-05-04 | Shoma → Team | Taylor sending new files; Jayaram to upload; then re-run export; Atul to flag changes | [→ May 4 Josh 2ADP099 Call](#may-4-2026--post-meeting-thread) |
 
 ---
 
@@ -494,6 +499,132 @@ Josh changed the NetSuite logic for Available Funds (and related calculation fie
 - [ ] Atul: Send prerequisites email to IT team (Python version, packages, credentials, folder structure, internet access, disk space, run time expectations)
 - [ ] Atul + Josh: Attend Monday 2026-05-05 10:30 AM PST IT setup meeting
 - [ ] Atul + Josh: Attend Tuesday 2026-05-06 script run meeting
+
+---
+
+## May 4, 2026 — Josh Reply: 2ADP083 + 2ADP099
+
+**Type:** Email reply
+**Participants:** Josh Grapani → Atul Kumar, Shoma Sinha
+
+**Raw content (verbatim):**
+
+> Hi Atul,
+>
+> For sequence 2ADP083 - the correct value for available funds is $0, which is the same as v16.
+>
+> As for 2ADP099, the report shows values in the FEMR, and I think they will not change the sequence number for that rollup and orphan. They said it was okay to have the same sequence because they will filter by project # if a rollup and orphan have the same sequence #, so I think we should do the same.
+>
+> Regards,
+> Josh
+
+**Decisions made:**
+
+1. **2ADP083** — correct Available Funds is **$0**. v16 value matches. **FULLY RESOLVED ✅**
+
+2. **2ADP099** — two findings:
+   - NetSuite team will NOT change the sequence number — both Rollup 1099 and Orphan Core099 keep sequence 2ADP099
+   - The FEMR report does show values for this sequence (data exists in NetSuite)
+   - Josh wants the script to filter by **project #** (not sequence #) when a rollup and orphan share the same sequence number — this is how NetSuite itself handles it
+   - **Root issue:** R1099 tab is empty in v16 because the Oracle API returns 401 for Rollup 1099 identifier — this needs to be fixed at the Oracle API access level (Josh/Taylor to grant API access for Rollup 1099)
+   - **Script change needed:** confirm the script already uses project # for filtering in multi-identifier sequences, and that 2ADP099 produces 2 tabs correctly once API access is fixed
+
+**Action items:**
+- [x] 2ADP083 confirmed $0 — v16 is correct, no changes needed ✅
+- [ ] 2ADP099: ask Josh/Taylor to fix Oracle API access for Rollup 1099 (currently returning 401)
+- [ ] 2ADP099: verify script uses project # filtering for multi-identifier sequences (confirm existing behavior)
+- [ ] Once API access fixed for R1099: re-run 2ADP099 and verify both tabs have data
+
+---
+
+## May 4, 2026 — Atul + Josh 2ADP099 Debug Call
+
+**Type:** Video call (transcription provided)
+**Participants:** Josh Grapani, Atul Kumar
+
+**Key quotes (verbatim):**
+
+> Josh: "We only put the authorization on the database object. There's nothing, there's no authentication on that specific rollup or project."
+
+> Josh: "Yeah, you can see this Atul. I can fetch. If I can see data here, it means that we can fetch, right?"
+
+> Josh: "It's the same 588627." [project number Josh was viewing]
+
+> Josh: "Taylor has nothing to do on the Oracle API. If we ask her, she doesn't know anything about that."
+
+> Josh: "Maybe if they can assign another rollup [sequence number] for that, it would make our life easier."
+
+> Atul: "I will first check on my side and give me some time. And if I'm still getting that error, I will let you know and then we can have another number assigned to it."
+
+> Josh: "I thought you were running on sequence and rollup, right Atul?" → Atul: "Yeah."
+
+> Josh: "They said, no, it's not a problem. We will filter if they have the same sequence, we will filter on the project number to break the tie. So I think they're set on that and we have to work on our side to fix this issue."
+
+**Decisions / findings:**
+
+1. **Oracle API has NO per-rollup permissions** — authorization is set at the database object level only. The 401 is NOT an Oracle permissions problem. Root cause must be on the script side.
+2. **Josh can see data for the sequence** — project # 588627 has data visible in the FEMR report. Data exists.
+3. **Taylor is not involved** — Oracle API is not her domain.
+4. **Fallback option** — if Atul cannot fix the 401, Josh can request a different/unique sequence number for Rollup 1099 from the NetSuite team.
+5. **Script runs on sequence + rollup** — confirmed. NetSuite team will filter by project # to break ties on shared sequence numbers — they are not changing the sequence.
+6. **Atul to investigate the 401 on the script side** — Josh waiting for findings.
+
+**Action items:**
+- [ ] Atul: Manually test Oracle API for Rollup 1099 (project # 588627) — reproduce the 401 and identify exact cause
+- [ ] Atul: Report findings to Josh
+- [ ] If 401 cannot be fixed: Josh to request a unique sequence number for Rollup 1099 from NetSuite team
+
+---
+
+## May 4, 2026 — Post-Meeting Thread (Josh + Shoma)
+
+**Type:** Email thread (post-IT meeting)
+**Participants:** Josh Grapani, Shoma Sinha, Atul Kumar
+
+**Email 1 — Josh on 2ADP099 (verbatim):**
+> Hi Atul, Can we have a quick talk regarding 2ADP099 to check the error? Because I don't think we have set any permissions for a specific project or rollup. We set a permission for the whole dataset.
+
+**Email 2 — Josh on 2ADP061 (verbatim):**
+> Hi Atul, Regarding, 2ADP061 G&A 5991 Budgeted FYE 9/30/2026 values, as of now, there are new budget uploads after the v15, and they should have values now.
+
+**Email 3 — Shoma on new files (verbatim):**
+> Ok Guys, Taylor will be sending us new files; so Jayaram will upload them and then we can run these. So yes- you will send me changes in the files.
+
+**Decisions / findings:**
+
+1. **2ADP099 — 401 root cause unknown:** Josh says permissions are set at the whole dataset level — no per-rollup or per-project restrictions exist. So the 401 on Rollup 1099 is NOT a known permissions issue. Need a quick call with Josh to debug the actual cause. Could be a data issue with the Rollup 1099 identifier in Oracle/NetSuite itself.
+
+2. **2ADP061 G&A 5991 Budgeted FYE 9/30/2026 — NOW HAS VALUES:** New budget uploads were done after v15. This field should no longer be blank — the next re-run will pull the new budget values. Previously confirmed blank in v16 but that was before the new upload.
+
+3. **Taylor sending new GROUP MAPPING / data files:** Jayaram (NextFlex) will upload them to the system. After upload, Atul runs the export. Atul to flag what changed between the new output and v16.
+
+**Action items:**
+- [ ] Atul: Schedule quick call with Josh to debug 2ADP099 401 error
+- [ ] Atul: Wait for Taylor's new files — Jayaram uploads them
+- [ ] Atul: After new files uploaded, re-run all groups with v16
+- [ ] Atul: Flag changes in new output vs v16 to Shoma
+- [ ] Note: 2ADP061 G&A 5991 Budgeted FYE 9/30/2026 will have values in next run — this is expected, NOT a bug
+
+---
+
+## May 4, 2026 — Shoma ADP Files Query
+
+**Type:** Email
+**Participants:** Shoma Sinha → Atul Kumar, Josh Grapani
+
+**Raw content:**
+> Hi Guys, So we will need to run ADP data; are all the files generating correctly.
+
+**Context:** Shoma asking about ADP file status after the v16 run and Josh's verification email.
+
+**Status at time of query:**
+- All 5 ADP files generated in v16 ✅ (247 tabs total)
+- All 27 Available Funds values verified to the cent ✅
+- 2ADP083 = $0 confirmed by Josh ✅
+- 2ADP099: 2 tabs generated (R1099 empty due to Oracle API 401, Core099 correct) — pending Oracle fix
+
+**Action items:**
+- [ ] Atul: Reply to Shoma confirming ADP files are ready with one known exception (2ADP099 R1099)
 
 ---
 
