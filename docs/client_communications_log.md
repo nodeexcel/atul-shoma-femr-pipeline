@@ -570,9 +570,13 @@ Josh changed the NetSuite logic for Available Funds (and related calculation fie
 6. **Atul to investigate the 401 on the script side** — Josh waiting for findings.
 
 **Action items:**
-- [ ] Atul: Manually test Oracle API for Rollup 1099 (project # 588627) — reproduce the 401 and identify exact cause
-- [ ] Atul: Report findings to Josh
-- [ ] If 401 cannot be fixed: Josh to request a unique sequence number for Rollup 1099 from NetSuite team
+- [x] Atul: Root cause found and fixed in v17 ✅ (see below)
+- [ ] Atul: Report findings to Josh once ADP v17 run completes and 2ADP099 is verified
+
+**Root cause found (2026-05-05):**
+`_fetch_mv_by_identifier()` in v16 was missing the OAuth `Authorization: Bearer` header. Multi-identifier sequences use the MV endpoint path — which also requires auth — but the header was only added to `_http_get()` and `_fetch_netamount()`. 2ADP099 is the only remaining multi-identifier sequence, so it was the only one hitting this bug.
+
+**Fix:** v17 adds `_get_auth_header()` to the MV request. Test confirmed: both `2ADP099 R1099` and `2ADP099 RCore099` tabs now have data. Full ADP run with v17 started on server 2026-05-05 ~07:58 UTC.
 
 ---
 
