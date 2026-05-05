@@ -248,15 +248,26 @@ docker compose exec web python manage.py migrate
 
 ---
 
-## IT Server Setup (2026-05-01/02)
+## IT Server Setup — COMPLETE ✅ (2026-05-05)
 
-NextFlex IT team has spun up a dedicated server for running the FEMR export script.
+**Server:** Windows Server 2025
+**IT team:** Andy + Jason (Jason Peabody)
+**Setup done:**
+- Python 3.14 installed ✅
+- Docker Desktop installed (had elevation issue — fixed by deleting ProgramData/Docker folder and re-running full installer) ✅
+- WSL updated ✅
+- `femr_webapp_handover.zip` extracted on server desktop (user `jpbody`) ✅
+- `.env.prod` file created with credentials ✅
 
-**Upcoming meetings:**
-- **Monday 2026-05-05, 10:30 AM PST** — Atul + Josh meet IT team to walk through setup prerequisites
-- **Tuesday 2026-05-06** — Atul + Josh attend script run meeting once IT infrastructure is ready
+**NOT run yet** — Shoma decided to wait for Taylor's confirmed final data files before running. Don't want incorrect data going to government.
 
-**Atul to send prerequisites email before Monday meeting.**
+**Next run meeting:** Tuesday 2026-05-06 or Wednesday 2026-05-07 — depends on when Taylor confirms data.
+
+**Two commands to start the app when ready:**
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec web python manage.py migrate
+```
 
 ---
 
@@ -264,7 +275,7 @@ NextFlex IT team has spun up a dedicated server for running the FEMR export scri
 
 | # | Item | Priority |
 |---|------|----------|
-| 1 | Wait for Taylor's new files (Jayaram uploads) — then re-run all groups with v16 | **HIGHEST** |
+| 1 | Wait for Taylor's confirmed final data files — Shoma chasing Taylor | **HIGHEST — blocked on Taylor** |
 | 2 | Monitor ADP v17 run on server — check nohup.out, verify 2ADP099 R1099 has data when complete | **IN PROGRESS — running on server since ~07:58 UTC** |
 | 3 | Attend Tuesday 2026-05-06 script run meeting (Atul + Josh) | High |
 | 4 | After re-run: flag changes in new output vs v16 to Shoma | High (after re-run) |

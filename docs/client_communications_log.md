@@ -32,6 +32,7 @@ When you share an email with Claude:
 | 2026-04-29/30 | Josh + Shoma | v15 review: Available Funds wrong on 28 ADP sequences (data timing issue), 2ADP061 G&A issue, files must go to NextFlex shared space | [→ Apr 29-30 Review](#april-2930-2026--josh-v15-file-review--available-funds-issues) |
 | 2026-05-01 | Josh + Shoma + Atul | Meeting: v16 files uploaded to NextFlex shared folder; Shoma backup run request; transformation script changes (output-only Excel + CSV support) | [→ May 1 Meeting](#may-1-2026--joshatulshomaatulkumar-meeting) |
 | 2026-05-01/02 | Shoma Sinha | IT team has spun up a server; needs prerequisites list from Atul; Monday 10:30 PST IT meeting, Tuesday script run meeting | [→ IT Server Setup](#may-12-2026--shoma-sinha-it-server-setup) |
+| 2026-05-05 | IT Setup Meeting | Andy + Jason (IT), Atul, Shoma — Docker installed on Windows Server 2025, .env.prod created, setup complete, waiting on Taylor's confirmed data files | [→ May 5 IT Meeting](#may-5-2026--it-setup-meeting) |
 | 2026-05-04 | Atul → Josh | v16 files sent with verification summary, 2ADP083 clarification request, 2ADP099 explanation | [→ May 4 v16 Message](#may-4-2026--atul--josh-v16-files-message) |
 | 2026-05-04 | Josh → Atul | 2ADP083 = $0 confirmed (v16 correct); 2ADP099 — keep both tabs, filter by project # not sequence # | [→ May 4 Josh Reply](#may-4-2026--josh-reply-2adp083--2adp099) |
 | 2026-05-04 | Shoma → Atul | Asking if all ADP files generating correctly, needs ADP data run | [→ May 4 Shoma ADP](#may-4-2026--shoma-adp-files-query) |
@@ -577,6 +578,38 @@ Josh changed the NetSuite logic for Available Funds (and related calculation fie
 `_fetch_mv_by_identifier()` in v16 was missing the OAuth `Authorization: Bearer` header. Multi-identifier sequences use the MV endpoint path — which also requires auth — but the header was only added to `_http_get()` and `_fetch_netamount()`. 2ADP099 is the only remaining multi-identifier sequence, so it was the only one hitting this bug.
 
 **Fix:** v17 adds `_get_auth_header()` to the MV request. Test confirmed: both `2ADP099 R1099` and `2ADP099 RCore099` tabs now have data. Full ADP run with v17 started on server 2026-05-05 ~07:58 UTC.
+
+---
+
+## May 5, 2026 — IT Setup Meeting
+
+**Type:** Video meeting (transcription provided)
+**Participants:** Andy, Jason (IT team), Atul Kumar, Shoma Sinha
+
+**Key findings:**
+
+1. **Server OS:** Windows Server 2025
+2. **IT team leads:** Andy and Jason (Jason Peabody — same person who shared the external folder)
+3. **Python:** Already installed — Python 3.14
+4. **Docker issue:** Docker Desktop failed to install initially despite admin/elevated privileges. Error: "for security reasons must be owned by elevated account." Fix: deleted the ProgramData/Docker folder and re-ran the full installer with elevation — installed successfully.
+5. **WSL:** Already installed, just needed updating to latest version.
+6. **App explained by Atul:** Two methods — (1) direct Python/terminal, (2) web app via Docker. Docker method preferred — all services bundled, just run two commands and open browser.
+7. **Web app zip found:** IT team located `femr_webapp_handover.zip` in NextFlex shared folder (FEMR folder).
+8. **.env.prod created:** Atul walked Jason through creating the file on the server desktop (under user `jpbody`). File was created as .txt first, then renamed to remove extension. Atul sent the env contents in the meeting chat.
+9. **Decision NOT to run yet:** Shoma said to wait for Taylor's confirmed final data files before running — don't want incorrect data going to government.
+10. **Setup is complete** — Docker installed, .env.prod created, zip extracted on server desktop. Just need to rename the .env file correctly and run two commands.
+
+**Decisions made:**
+1. Web app setup on Windows Server 2025 is complete — ready to run once data is confirmed.
+2. Preferred method: Docker web app (not direct Python script).
+3. Do NOT run the script until Taylor confirms the final data files.
+4. Shoma to chase Taylor for confirmed final data. Run will happen Tuesday or Wednesday depending on when clean data arrives.
+
+**Action items:**
+- [ ] Shoma: Chase Taylor to confirm final GROUP MAPPING / data files
+- [ ] IT team: Rename .env file to remove .txt extension (if not already done)
+- [ ] Atul + IT team + Josh: Meet again once Taylor confirms data — run two Docker commands to start the app
+- [ ] Run scheduled: Tuesday 2026-05-06 or Wednesday 2026-05-07 depending on Taylor's confirmation
 
 ---
 
