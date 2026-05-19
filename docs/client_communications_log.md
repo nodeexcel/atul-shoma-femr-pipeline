@@ -33,10 +33,16 @@ When you share an email with Claude:
 | 2026-05-01 | Josh + Shoma + Atul | Meeting: v16 files uploaded to NextFlex shared folder; Shoma backup run request; transformation script changes (output-only Excel + CSV support) | [→ May 1 Meeting](#may-1-2026--joshatulshomaatulkumar-meeting) |
 | 2026-05-01/02 | Shoma Sinha | IT team has spun up a server; needs prerequisites list from Atul; Monday 10:30 PST IT meeting, Tuesday script run meeting | [→ IT Server Setup](#may-12-2026--shoma-sinha-it-server-setup) |
 | 2026-05-05 | IT Setup Meeting | Andy + Jason (IT), Atul, Shoma — Docker installed on Windows Server 2025, .env.prod created, setup complete, waiting on Taylor's confirmed data files | [→ May 5 IT Meeting](#may-5-2026--it-setup-meeting) |
+| 2026-05-07 | Full team thread | Budgets uploaded by Jayaram; Taylor/Randy reviewed FEMR; 3 change requests; March actuals still uploading; GL code sorting change confirmed for script; NSAW access issue | [→ May 7 Team Thread](#may-7-2026--full-team-thread) |
+| 2026-05-07 | Josh → Atul | Sample file sent (FEMR Dev_QA v051326.xlsx) — exact GL code labels, Labor Hours row removed, dollar sign formatting confirmed doable in script | [→ May 7 Josh Sample File](#may-7-2026--josh-sample-file--gl-codes) |
+| 2026-05-07 | Josh → All | v18 review: remove $ from Remaining Cash; March data confirmed in NSAW ✅; Shoma: do UAT with NextFlex team after unit testing | [→ May 7 v18 Review Thread](#may-7-2026--v18-review-thread) |
+| 2026-05-07 | Taylor → All | v18 UAT: 3 missing GL codes found (5007, 5098, 5099) — totals don't match NSAW P&L for 2ADP001 | [→ May 7 Taylor Missing GL Codes](#may-7-2026--taylor-missing-gl-codes) |
+| 2026-05-07 | Josh + Shoma → Atul | Timeline discussion for GL code additions — Josh: 1 day NSAW; Shoma asks Atul for script estimate; full re-validation required after | [→ May 7 Timeline Discussion](#may-7-2026--timeline-discussion-gl-codes) |
 | 2026-05-04 | Atul → Josh | v16 files sent with verification summary, 2ADP083 clarification request, 2ADP099 explanation | [→ May 4 v16 Message](#may-4-2026--atul--josh-v16-files-message) |
 | 2026-05-04 | Josh → Atul | 2ADP083 = $0 confirmed (v16 correct); 2ADP099 — keep both tabs, filter by project # not sequence # | [→ May 4 Josh Reply](#may-4-2026--josh-reply-2adp083--2adp099) |
 | 2026-05-04 | Shoma → Atul | Asking if all ADP files generating correctly, needs ADP data run | [→ May 4 Shoma ADP](#may-4-2026--shoma-adp-files-query) |
 | 2026-05-04 | Josh + Atul | Quick call: 2ADP099 401 debug — no Oracle permissions issue, Atul to investigate on script side | [→ May 4 2ADP099 Debug Call](#may-4-2026--atul--josh-2adp099-debug-call) |
+| 2026-05-19 | Atul + Josh | GL account API discovery: 5007/5098/5099 not in API → Josh done NSAW backend → re-discovery in progress | [→ May 19 GL Discovery](#may-19-2026--gl-account-api-discovery--josh-backend-complete) |
 | 2026-05-04 | Josh → Atul | 2ADP061 G&A 5991 Budgeted FYE 9/30/2026 — new budget uploads after v15, should now have values | [→ May 4 Josh 2ADP099 Call](#may-4-2026--post-meeting-thread) |
 | 2026-05-04 | Shoma → Team | Taylor sending new files; Jayaram to upload; then re-run export; Atul to flag changes | [→ May 4 Josh 2ADP099 Call](#may-4-2026--post-meeting-thread) |
 
@@ -578,6 +584,305 @@ Josh changed the NetSuite logic for Available Funds (and related calculation fie
 `_fetch_mv_by_identifier()` in v16 was missing the OAuth `Authorization: Bearer` header. Multi-identifier sequences use the MV endpoint path — which also requires auth — but the header was only added to `_http_get()` and `_fetch_netamount()`. 2ADP099 is the only remaining multi-identifier sequence, so it was the only one hitting this bug.
 
 **Fix:** v17 adds `_get_auth_header()` to the MV request. Test confirmed: both `2ADP099 R1099` and `2ADP099 RCore099` tabs now have data. Full ADP run with v17 started on server 2026-05-05 ~07:58 UTC.
+
+---
+
+## May 7, 2026 — Timeline Discussion: GL Codes
+
+**Type:** Email thread (separate from Taylor thread)
+**Participants:** Josh Grapani, Shoma Sinha, Atul Kumar
+
+**Josh (verbatim):**
+> "Can we talk first before giving them time frame for the additional GL accounts? On my side, it would take a day to add this including some tests and validation."
+> "@Atul Kumar - how long do you think you need to add such GL accounts?"
+> "Also, we need to cross check and validate again all the sequences after the modifications if the NSAW Report is the same as the export files."
+
+**Shoma (verbatim):**
+> "Yep let's estimate — NSAW development n testing - 8 hrs. Atul script development n testing - [awaiting Atul's input]. Then u communicate."
+
+**Josh estimate:** 1 day (8 hrs) for NSAW backend changes + testing
+**Atul estimate needed:** script changes + single sequence test + full re-run validation
+
+**Script change scope for Atul:**
+- Find Oracle API account name strings for 5007, 5098, 5099: ~30 min
+- Code changes (add 3 rows, update 8 row constants): ~30 min
+- Single sequence test: ~2 hours (API calls)
+- Full re-run all groups + cross-validate vs NSAW: ~1 additional day
+
+**Atul realistic estimate: 1 day script + test; full cross-validation 1 additional day after Josh's NSAW changes**
+
+**Atul's estimate (replied):**
+- Script changes + single sequence test: ~1 day
+- Full re-run + cross-validation: ~1 additional day (after Josh's NSAW changes)
+- Total: 2 days, second day blocked on Josh completing NSAW side first
+
+**Atul's reply to Josh (verbatim):**
+> "For the script side:
+> - Script changes + single sequence test: ~1 day (finding the API account strings, adding the 3 GL codes, updating the layout, testing with one sequence)
+> - Full re-run all groups + cross-validation vs NSAW: ~1 additional day after Josh's NSAW changes are done
+> So total on my end: 2 days, but the second day is dependent on Josh completing his NSAW backend changes first, so both sides are in sync before we validate.
+> Happy to sync on a timeline once Josh has a date for the NSAW changes."
+
+**Action items:**
+- [x] Atul: Replied with timeline estimate ✅
+- [x] Josh: Complete NSAW backend changes ✅ (confirmed 2026-05-19 — see GL Account API Discovery section below)
+- [ ] Josh + Shoma: Align on timeline before communicating to Taylor
+- [ ] Atul: Add 3 GL codes to v18, update row constants, re-test (unblocked — Josh done)
+- [ ] Both: Full cross-validation after changes on both sides
+
+---
+
+## May 7, 2026 — Taylor Missing GL Codes
+
+**Type:** Email (Taylor → Josh, Shoma, Atul, full team)
+**Reference file:** `CA2 ADP 1 NS Project PnL UT.xlsx` (NSAW P&L for 2ADP001)
+
+**Taylor (verbatim):**
+> "It looks like we are missing some 5000s GL codes that apply to the older ADPs. Could you please add the following to the FEMR?
+> 5007    DNU-Direct Supplies
+> 5098    DNU Direct Accruals Gov
+> 5099    DNU-Other Direct Costs
+> The totals don't appear to match, due to these missing GL codes."
+
+**Analysis of Taylor's P&L file (CA2 ADP 1 NS Project PnL UT.xlsx):**
+- 2ADP001 (Rollup 1001) P&L across 10 sub-projects
+- GL codes present in NSAW P&L but missing from FEMR script:
+  - **5007 DNU - Direct Supplies:** $3,008.27 Grand Total
+  - **5099 DNU - Other Direct Costs:** $23,007.46 Grand Total
+  - **5098 DNU Direct Accruals Gov:** not in 2ADP001 P&L but Taylor says it applies to other older ADPs
+- Accounts match FEMR script: 5001, 5002, 5003, 5005, 5008, 5009, 5990, 5991, 5992 ✅
+
+**Decisions needed:**
+1. Add 5007, 5098, 5099 to `ACTUALS_BUDGET_ACCOUNTS` in v18
+2. Need exact Oracle API account name strings for these 3 codes (query API or ask Josh)
+3. Row layout shifts again — 12 accounts → 15, all row constants shift down by 3
+
+**Follow-up exchanges:**
+
+Josh (verbatim):
+> "These accounts are not in the original FEMR template. If we are to add GL accounts, could you please give us the complete list of accounts? Do we also add accounts 5501 and 5506?"
+
+Taylor (verbatim):
+> "What is the estimated time for you and your team to modify the backend and the scripts to include 5007, 5098, and 5099? These GL codes are more critical to include, as they ensure the FEMR accurately reflects direct cost actuals. I no longer think we need to add in the 5501 and 5506 since they relate to cost share and we are not tracking that in the FEMR."
+
+Josh (verbatim):
+> "I would ask the team and update you."
+
+**Decisions confirmed:**
+1. Only add **5007, 5098, 5099** — confirmed by Taylor as critical for direct cost actuals
+2. **5501 and 5506 NOT needed** — cost share accounts, not tracked in FEMR
+3. Josh is checking timeline with Atul — Atul needs to provide estimate
+
+**Action items:**
+- [ ] Atul: Reply with timeline estimate for adding 5007, 5098, 5099 to script
+- [ ] Atul: Find exact Oracle API account name strings for 5007, 5098, 5099
+- [ ] Atul: Add 3 GL codes to v18, update row constants (12→15 rows), re-test
+- [ ] Josh: Update NSAW backend to add these accounts on his side
+
+---
+
+## May 19, 2026 — GL Account API Discovery + Josh Backend Complete
+
+**Type:** Email thread continuation + technical discovery
+**Participants:** Atul Kumar, Josh Grapani, Shoma Sinha
+
+**Atul's API discovery message to Josh (verbatim):**
+> "Quick update on the 5007, 5098, and 5099 accounts — I ran a test against the Oracle API to discover these account name strings before adding them to the script.
+> The API does not return these three accounts at all for 2ADP001, even though they show values in the NSAW P&L. This means they are not currently exposed in the mv_femr_report view that the script reads from.
+> So the sequence needs to be:
+> 1. Josh adds 5007, 5098, 5099 to the NSAW MV report on his side first
+> 2. Once they appear in the API, I re-run my discovery script to get the exact account name strings
+> 3. I then add them to the export script
+> On my side I'm ready to go as soon as the accounts are visible in the API. Happy to coordinate timing."
+
+**Josh's reply (verbatim):**
+> "Hi Atul, I've done the changes on the backend, pls try on your side. Here is a sample export of the updated table."
+> [Josh attached a sample export file showing the updated table]
+
+**Atul's acknowledgment (verbatim):**
+> "Hi @Josh Grapani, Okay, I'll check it out and verify it on my end."
+
+**Status:** Josh's NSAW backend changes are complete as of 2026-05-19. Re-running discovery script now to get exact API account_name strings for 5007, 5098, 5099.
+
+**Action items:**
+- [x] Josh: NSAW backend changes complete ✅
+- [ ] Atul: Re-run `scripts/test_discover_gl_accounts.py` to get exact account_name strings
+- [ ] Atul: Add 5007, 5098, 5099 to `ACTUALS_BUDGET_ACCOUNTS` in v18, update row constants (12→15 rows, all constants below actuals shift +3)
+- [ ] Atul: Test with `--sequence 2ADP001 --skip-preload`, verify 3 new rows appear with correct values
+- [ ] Both: Full re-run all groups + cross-validate vs NSAW P&L
+
+---
+
+## May 7, 2026 — v18 Review Thread
+
+**Type:** Email thread
+**Participants:** Josh Grapani, Shoma Sinha, Jayaram P, Atul Kumar
+
+**Josh on v18 test file (verbatim):**
+> "@Atul Kumar - The remaining cash values have a $ sign, can we remove that also?"
+> "@Shoma Sinha - should we ask nextflex team for approval for this export file?"
+> "@Jayaram P - can I ask for some of the projects that are included in the newest upload for March?"
+
+**Jayaram — March upload project list (sample):**
+713061, 713063, 713104, 713105, 713107, 713108, 713110, 716006, 716082, 716094, 716114, 716122, 716140, 716141, 716145, 716146, 716159, 716160
+
+**Jayaram — March Projects file (`March Projects.xlsx`):**
+- 554 posting rows across 136 unique projects
+- Columns: Project External ID, Amount (Debit), Amount (Credit)
+- Total Debit: $3,880,247.02 | Total Credit: $3,889,877.81
+- File saved at: `/home/lap-68/Downloads/March Projects.xlsx`
+
+**Jayaram — March Trial Balance file (`Import TB_March_2026.csv`):**
+- Batch ID: 2603-TB03, Date: 3/31/2026
+- 777 rows across 111 unique accounts
+- Key FEMR GL accounts confirmed in upload:
+  - 5001 Labor Cost: $420,852 debit
+  - 5002 Consulting: $2,813 debit
+  - 5003 Material: $38,969 debit
+  - 5004 Travel: $4,611 debit
+  - 5005 Subcontracting: $1,753,320 debit
+  - 5009 Other Direct Costs: $3,440 debit
+  - 5010 Equipment: $1,080 debit
+  - 5990 Fringe: $229,317 debit
+  - 5991 G&A: $948,389 debit
+  - 5992 Sub K Overhead: $53,126 debit
+- Josh confirmed batch 2603-TB03 is reflected in NSAW ✅
+- File saved at: `/home/lap-68/Downloads/Import TB_March_2026.csv`
+
+**Josh confirmed March data in NSAW (verbatim):**
+> "By spot checking, I've confirmed that the March uploads (2603-TB03) are reflected in the FEMR report now."
+
+**Shoma's decision (verbatim):**
+> "Yes Josh — if we have completed our unit testing; then pls do so that they can do UAT as well."
+
+**Atul replied:**
+> "I'll look into it and try to remove the remaining $ sign."
+
+**Decisions made:**
+1. **Remaining Cash $ — remove it** — `_write_remaining_cash_row` still uses `NUM_FMT` (with $). Fix: change to `NUM_FMT_NO_DOLLAR`. Atul confirmed will fix.
+2. **March data — CONFIRMED READY ✅** — Josh spot-checked, March uploads (2603-TB03) reflected in NSAW. Data is ready for full run.
+3. **Next step after unit testing** — Shoma wants to share with NextFlex team for UAT (User Acceptance Testing) once Atul's unit testing is complete.
+
+**Action items:**
+- [x] Atul: Fix Remaining Cash $ in v18 ✅ — `_write_remaining_cash_row` + Grand Total of all data rows now use `NUM_FMT_NO_DOLLAR`
+- [x] Atul: Re-tested v18 — all formats verified ✅
+- [ ] Atul: Share updated test_v18.xlsx with Josh for sign-off
+- [ ] After Josh approves: run full report all groups with v18
+- [ ] After full run verified: share with NextFlex team for UAT
+
+---
+
+## May 7, 2026 — Josh Sample File + GL Codes
+
+**Type:** Email (Josh → Atul, Shoma)
+**File shared:** `FEMR Dev_QA v051326.xlsx`
+
+**Raw content (verbatim):**
+> Hi Atul, Here is a sample file for your reference with the sorting and new account names. Also, I think we can cater to their request on the dollar sign formatting in the export script.
+
+**Confirmed changes for v18 (from sample file analysis):**
+
+1. **GL code labels — exact format confirmed:**
+   - `5001 Labor Cost`
+   - `5002 Consulting`
+   - `5003 Material`
+   - `5004 Travel`
+   - `5005 Subcontracting`
+   - `5008 Equipment`
+   - `5009 Other Direct Costs`
+   - `5010 Equipment`
+   - `5990 Fringe`
+   - `5991 G&A`
+   - `5992 Sub K Overhead`
+   - `5993 Sub K Overhead`
+
+2. **Labor Hours row REMOVED** — 12 data rows instead of 13. All subsequent row positions shift up by 1.
+
+3. **Dollar sign formatting** — Josh confirms this can be done in the script. Taylor wants `$` only on total rows (ACTUALS Total, BUDGETED Total), not on individual data rows.
+
+4. **NSAW access** — Josh replied separately: Taylor lost access temporarily due to changes being made. Josh re-shared access.
+
+**Josh clarification on dollar sign (verbatim):**
+> "Dollar signs also on the Grand Total Column."
+
+**Dollar sign rule confirmed so far:**
+- Individual data rows (Actuals/Budgeted): no $
+- ACTUALS Total row: $ ✅
+- BUDGETED Total row: $ ✅
+- Grand Total column (last column): $ ✅
+- Grand Total column already exists in script as =SUM() formula ✅
+
+**Josh reply (verbatim):**
+> "I am not sure about that, but the original FEMR template has dollar signs on the cumulative pivot table. Let's keep it as is for now."
+
+**Final dollar sign rule — CONFIRMED:**
+- Actuals/Budgeted individual data rows: **no $**
+- ACTUALS Total row: $ ✅
+- BUDGETED Total row: $ ✅
+- Grand Total column: $ ✅
+- Contracting rows (Committed, Obligated, Expended, Remaining Cash): **keep $ as-is**
+- Cumulative section: **keep $ as-is**
+
+**Action items:**
+- [ ] Atul: Build v18 — GL code labels, Labor Hours removed, $ on total rows + Grand Total column, row layout updated
+- [ ] Atul: Test v18 with a single sequence, share with Josh for review before full run
+
+---
+
+## May 7, 2026 — Full Team Thread
+
+**Type:** Email thread (post 3-hour meeting, Atul not available)
+**Participants:** Shoma Sinha, Josh Grapani, Taylor Bui, Randy Lu, Prathima Murthy, Marirose Landicho-Rasay, Diane Baxster (OOO), Jayaram P, Atul Kumar
+
+**Summary of thread:**
+
+**Budget upload:**
+- Jayaram uploaded budgets to NetSuite Budget tab the previous evening
+- Shoma asked Josh to spot check these project numbers: 713079 ($770,000.32), 713101 ($130,000.00), 713109 ($50,000.00), 716084 ($1,167,165.06), 716114 ($42,160.00), 716115 ($15,188,134.00)
+
+**Taylor + Randy reviewed FEMR report in NSAW and raised 3 change requests:**
+
+> 1. "For the Expense Type column, could we reformat it to list the GL code first, followed by the expense type, and then sort it in numerical order? Example: 5001 Labor Cost / 5002 Consulting / 5003 Materials"
+> 2. "Please remove the Contracting Total row, as we don't need this row and it was not included in the original FEMR for the NetSuite template."
+> 3. "Could we update the format so there is no dollar sign in front of individual amounts, and only include the '$' symbol for total rows and columns?"
+
+**Josh's responses on each request:**
+1. **GL code sorting** — "We can do the change for GL codes and sorting right now in NSAW but it will not be reflected immediately on the export files because we also need to modify the export script." → Josh has already updated NSAW sorting ✅. **Script change required from Atul.**
+2. **Contracting Total row** — NSAW system limitation. Removing it would also remove Actuals and Budgets total rows. In the export files it's already designed to not show like in the sample template. **No change needed in script.**
+3. **Dollar sign formatting** — NSAW system limitation. Changing currency field to numeric affects grand total. **No change in script.**
+
+**Data status:**
+- Taylor confirmed: actuals aligned with QBO through February 2026 ✅
+- Budgets for ADPs extending beyond 9/30/2026 — full budget not showing, Taylor says that's okay ✅
+- **March actuals: NOT ready** — Randy and Prathima still uploading March into NetSuite
+- Diane Baxster is OOO — hasn't been consulted on GL codes yet
+
+**Shoma's decisions:**
+> "FEMR report is incomplete till it can be available from the script. Any change that is needed to be made has to be communicated to Atul and then once we tested and its fine — we can say that FEMR is now available."
+
+- Do NOT run the full report yet — wait for March actuals to finish uploading
+- In the meantime: implement GL code sorting change in the script
+- After change is done and data is ready: test run a few sequences, then full run
+
+**NSAW access issue:**
+- Taylor lost access to FEMR report in NSAW — Josh re-shared
+- Later: Taylor and Randy both can't view it again — Shoma asking Josh why
+- Root cause unknown — Josh to investigate
+
+**Also happened in May 7 meeting (Atul):**
+- v17 script uploaded to NextFlex shared folder before the demo ✅
+- Demo given showing how to run the script directly via Python
+- Web app via Docker is NOT working on the Windows Server — root cause: nested Hyper-V virtualization not supported on the VM. Docker Desktop requires WSL2 which requires nested virtualization. Script-only method is the working path for now.
+
+**Action items:**
+- [x] Atul: Upload v17 to NextFlex shared folder ✅
+- [ ] Atul: Modify export script — reformat Expense Type/account rows to show GL code first, then description, sorted numerically (e.g. "5001 Labor Cost") → this will be **v18**
+- [ ] Atul: Wait for March actuals to finish uploading before running full report
+- [ ] Josh: Fix NSAW access for Taylor and Randy
+- [ ] Josh: Confirm GL code format in NSAW so script matches exactly
+- [ ] Diane: Consult on GL codes (when back from OOO)
+- [ ] Randy + Prathima: Finish uploading March actuals into NetSuite
+- [ ] After GL code change + March actuals ready: test run a few sequences, verify, then full run
 
 ---
 
