@@ -43,6 +43,10 @@ When you share an email with Claude:
 | 2026-05-04 | Shoma → Atul | Asking if all ADP files generating correctly, needs ADP data run | [→ May 4 Shoma ADP](#may-4-2026--shoma-adp-files-query) |
 | 2026-05-04 | Josh + Atul | Quick call: 2ADP099 401 debug — no Oracle permissions issue, Atul to investigate on script side | [→ May 4 2ADP099 Debug Call](#may-4-2026--atul--josh-2adp099-debug-call) |
 | 2026-05-19 | Atul + Josh | GL account API discovery: 5007/5098/5099 not in API → Josh done NSAW backend → re-discovery in progress | [→ May 19 GL Discovery](#may-19-2026--gl-account-api-discovery--josh-backend-complete) |
+| 2026-05-19 | Atul → Josh | v18 full run complete (400 tabs, 9 files). NEW FINDING: 60 new 1ADP (CA1) sequences in GROUP MAPPING — awaiting Josh confirmation | [→ May 19 v18 Run](#may-19-2026--v18-full-run-complete) |
+| 2026-05-19 | Josh → Atul | "Massive changes" to FEMR report from internal meeting — wants to discuss impact on export script | [→ May 19 Massive Changes](#may-19-2026--josh-massive-changes-alert) |
+| 2026-05-20 | Josh + Atul | Meeting: 2ADP099 R1099 auth confirmed not Oracle issue; filter by project_number when sequences collide; 10-min transcript gap — massive changes content missing | [→ May 20 Meeting](#may-20-2026--josh--atul-meeting-massive-changes--2adp099) |
+| 2026-05-14/15 | Shoma → Atul | Zapier due diligence request — run Python script + export to shared folder + auto-upload to NSAW via Zapier | [→ May 15 Zapier Request](#may-1415-2026--shoma-zapier-due-diligence-request) |
 | 2026-05-04 | Josh → Atul | 2ADP061 G&A 5991 Budgeted FYE 9/30/2026 — new budget uploads after v15, should now have values | [→ May 4 Josh 2ADP099 Call](#may-4-2026--post-meeting-thread) |
 | 2026-05-04 | Shoma → Team | Taylor sending new files; Jayaram to upload; then re-run export; Atul to flag changes | [→ May 4 Josh 2ADP099 Call](#may-4-2026--post-meeting-thread) |
 
@@ -710,6 +714,185 @@ Josh (verbatim):
 - [ ] Atul: Add 5007, 5098, 5099 to `ACTUALS_BUDGET_ACCOUNTS` in v18, update row constants (12→15 rows, all constants below actuals shift +3)
 - [ ] Atul: Test with `--sequence 2ADP001 --skip-preload`, verify 3 new rows appear with correct values
 - [ ] Both: Full re-run all groups + cross-validate vs NSAW P&L
+
+---
+
+## May 14/15, 2026 — Shoma: Zapier Due Diligence Request
+
+**Type:** Upwork chat + MS Teams message
+**Participants:** Shoma Sinha → Atul Kumar
+
+**Shoma (Upwork, verbatim):**
+> "Atul, have you done integrations between systems like we need to use a third party tool instead of script as a going forward method? In nextflex- they probably have zapier which we might need to do API calls - have u had experience in that space?"
+
+**Shoma (MS Teams, verbatim):**
+> "Hi Atul, Can you do a due diligence as to what would be the workflow and time; if the company uses Zapier to run python script and export the reports in a shared folder - u have the access and also the input folder for contracting and auto upload in NSAW. Would u be able to do that."
+
+**What Shoma is asking:**
+1. Use Zapier to trigger/run the FEMR Python export script
+2. Export reports automatically to the NextFlex shared folder
+3. Auto-upload contracting input files to NSAW
+
+**Atul's response:** Confirmed he has Zapier experience. Due diligence writeup pending.
+
+**Action items:**
+- [ ] Atul: Write due diligence response — workflow + time estimate for Zapier integration (**PENDING — on hold until Josh meeting changes are documented first**)
+
+---
+
+## May 19, 2026 — Josh: Massive Changes Alert
+
+**Type:** Email
+**Participants:** Josh Grapani → Atul Kumar, Shoma Sinha
+
+**Josh (verbatim):**
+> "We had a meeting yesterday and there are massive changes in the FEMR report. What time is your availability to discuss the changes and how it would affect the export script?"
+
+**Context:** This email came in after:
+- v18 full run was just completed (400 tabs)
+- 3 new GL codes (5007/5098/5099) were just added and verified
+- The 1ADP (CA1) sequences question was pending Josh's confirmation
+
+**Unknown:** What the "massive changes" are — layout, GL codes, sequences, new columns, new groups? Not known until the meeting.
+
+**Impact:** v18 may need significant rework. Do NOT share v18 files with the team until after this meeting.
+
+**Atul's reply (verbatim):**
+> "I won't be available today. Can we connect tomorrow, 20th May, at 10 AM IST? Please share a meeting invite for the same.
+> Also, just to flag: I completed the v18 export run this morning with the 5007/5098/5099 GL codes added and verified. I'll hold off on sharing those files with the team until after our call so we can factor in the new changes."
+
+**Atul's reply (verbatim):**
+> "I won't be available today. Can we connect tomorrow, 20th May, at 10 AM IST? Please share a meeting invite for the same.
+> Also, just to flag: I completed the v18 export run this morning with the 5007/5098/5099 GL codes added and verified. I'll hold off on sharing those files with the team until after our call so we can factor in the new changes."
+
+**Meeting held:** 2026-05-20 10:00 AM IST ✅ (see section below)
+
+**Action items:**
+- [x] Atul: Replied — proposed 2026-05-20 10:00 AM IST ✅
+- [x] Meeting held 2026-05-20 ✅
+
+---
+
+## May 20, 2026 — Josh + Atul Meeting (Massive Changes / 2ADP099)
+
+**Type:** Video call with transcription
+**Participants:** Josh Grapani, Atul Kumar
+**Scheduled for:** 10:00 AM IST 2026-05-20
+
+**TRANSCRIPT STATUS:** Two segments captured. Gap still exists from ~6:03 to 11:33 (~5 min missing).
+
+---
+
+### PART 1 (0:04 – 6:03): Massive Changes — Dynamic GL Account Expansion
+
+**This is the "massive changes" Josh referenced in his 2026-05-19 email.**
+
+**Josh (verbatim):**
+> "Our main agenda is the addition of so many GL Accounts on our report. Diane and Tim want to add all of the GL Accounts. Because right now, we only followed the template that was given to us, the FMR NetSuite template."
+> "So now they want to add accounts from 5000 up to 799 [5000–7999]."
+> "The range to include: accounts with account number from 5000 to 5499, and from 5600 to 799 [7999]."
+> "If an account doesn't have any posting or have zero amounts, it will be excluded in the report for such sequence."
+> "My worry is for every sequence, the layout of the first table would be different."
+> "I need those accounts, even though they have zero postings, so that the grid will not fall apart. It will show the whole range of date for the selected filter range."
+
+**Key decisions:**
+1. **Account range expanded:** 5000–5499 AND 5600–7999 (5500–5599 excluded — matches Taylor's earlier cost-share exclusion)
+2. **Dynamic layout:** Accounts with zero postings for a sequence are excluded from that sequence's report — every sequence will have a different number of rows
+3. **Josh's NSAW concern:** He needs all accounts visible (even zeros) for grid consistency on his side — this is a NSAW-side concern he needs to resolve
+4. **Script concern:** Row constants (ROW_ACTUALS_START/END, ROW_BUDGET_START/END, etc.) can no longer be fixed numbers — must be calculated dynamically per sequence
+5. **Atul committed:** Research and give feedback by "tomorrow evening" (2026-05-21)
+6. **Josh's next step:** Will update Atul once he makes the changes to the Oracle dataset/table — Atul can then explore the updated structure
+
+**Script architecture impact — MAJOR:**
+- `ACTUALS_BUDGET_ACCOUNTS` hardcoded list (currently 15 rows) must become dynamic
+- All `ROW_*` constants must be calculated at runtime per sequence, not hardcoded
+- Need to discover all accounts in range 5000–5499 + 5600–7999 from the API per sequence
+- Rows excluded if zero postings for that sequence
+- This is a fundamental rewrite — v18 files are based on old fixed structure and are NOT final
+
+---
+
+### PART 2 (11:33 – 14:38): 2ADP099 R1099 Permission / Fetch Issue
+
+**Josh confirmed:**
+- Oracle API has **no authentication restriction** on this role/project — "there's no authentication on that specific role of our project"
+- Josh can see project 588627 (2ADP099 R1099) data in NSAW — data exists
+- **Taylor has no involvement with Oracle API** — cannot help debug
+
+**Key decision — tiebreaker logic:**
+> Josh (verbatim): "we will filter if they have the same sequence, we will filter on the project number to tie, to break the tie on the sequence if they have the same."
+
+- When two rollups share the same sequence number, **filter by project_number** to distinguish them
+- Josh: "we have to work on our side to fix this issue"
+
+**Fallback:** If script fix fails, Josh will assign a different sequence number to 2ADP099 R1099.
+
+---
+
+**Additional details (6:03 – 11:33):**
+
+**Deadline (verbatim):**
+> Josh: "We have a deadline. Diane and Shoma decided that. We will need the Nextflexsupport files on Tuesday, so we have one week to work on this."
+- **Deadline: 2026-05-27 (Tuesday)**
+
+**API status — accounts NOT yet added:**
+> Josh: "You will not be able to pull any of these accounts right now. I'm still in the middle of doing the changes."
+> "The current workbook stay as is when I add the three accounts [5007/5098/5099]."
+- The 5000–5499 / 5600–7999 range is NOT yet in the Oracle API
+- Wait for Josh to ping before starting script implementation
+
+**Parallel work plan:**
+> Josh: "I will turn over or update you once I'm good in the dataset so that you can start your work. We can work side by side — me while developing the workbook and you exploring the script modifications."
+
+**NetSuite chart of accounts reference:**
+> Josh: "If you want this chart of accounts, you can go when you log in on your NetSuite account — List → Accounting → Accounts."
+- Atul has NetSuite access and confirmed he's logged in
+- This is the reference to see all accounts in the range
+
+**Written record:**
+> Josh: "I will send in the chat [Teams] the account ranges, so that you will have a record. Black and white."
+- Josh will send the exact account ranges in Teams chat
+
+**Communication going forward:**
+> Josh: "Let's chat on email when we have an update for anyone."
+
+---
+
+**NOTE: This is a SEPARATE meeting from the 2ADP099 permission meeting (that transcript was a different call).**
+
+**Action items:**
+- [ ] Atul: Research dynamic GL account layout — how to handle variable rows per sequence. Reply to Josh by 2026-05-21 evening
+- [ ] Josh: Send account ranges in Teams chat (written record)
+- [ ] Josh: Ping Atul when Oracle dataset is updated with new account ranges
+- [ ] Atul: Once Josh pings — start script modifications for dynamic GL layout
+- [ ] **Deadline: 2026-05-27 (Tuesday) — NextFlex export files needed**
+- [ ] **DO NOT share v18 files as final** — layout changes entirely with dynamic GL accounts
+
+---
+
+## May 19, 2026 — v18 Full Run Complete
+
+**Type:** Internal verification + pending client confirmation
+**Status:** Run complete, files verified, one open question before delivery
+
+**v18 run results (2026-05-19):**
+- Run completed on Ubuntu server (`pythonai@116.202.210.102`)
+- 400 total tabs, 9 files, no errors
+- All 3 new GL codes (5007, 5098, 5099) confirmed present with correct values for 2ADP001
+- 2ADP099: both tabs generated (R1099 + RCore099) ✅
+- Files downloaded locally: all 9 `femr_v18_*.xlsx` in project root
+
+**⚠️ Open question for Josh:** GROUP MAPPING now contains 60 new CA1 sequences with `1ADP` prefix (1ADP001–1ADP060ish) not present in previous runs. Script picked them up and generated tabs. Must confirm with Josh:
+1. Were these intentionally added to GROUP MAPPING?
+2. Should 1ADP tabs be included in the files sent to the team?
+
+**Draft message to Josh:** (see project_femr_status.md — Pending Items #1)
+
+**Action items:**
+- [ ] Josh: Confirm whether 1ADP (CA1) sequences in GROUP MAPPING are intentional
+- [ ] Josh: Confirm whether 1ADP tabs should be included in delivery
+- [ ] Atul: Cross-validate v18 vs NSAW P&L for spot-check sequences
+- [ ] Atul: Share v18 files with team once Josh confirms
 
 ---
 
