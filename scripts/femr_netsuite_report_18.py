@@ -16,6 +16,10 @@ Changes from v17:
     and Cumulative sections unchanged (keep $ as-is per Josh 2026-05-07).
   - _write_section_total_row: sum_start no longer skips first row since Labor
     Hours row is gone.
+  - Added 3 legacy DNU GL codes (5007, 5098, 5099) to ACTUALS_BUDGET_ACCOUNTS
+    after Josh completed NSAW backend changes (2026-05-19). Oracle API strings
+    confirmed by discovery script. Sections now have 15 data rows each.
+    All row constants updated accordingly (actuals +3, post-budget +6).
 
 Changes from v16:
   - Fixed missing OAuth header in _fetch_mv_by_identifier(). The MV endpoint
@@ -205,18 +209,21 @@ QUARTERS = ["Q1", "Q2", "Q3", "Q4"]
 # (row_label, api_account_name)
 # Sorted numerically by GL code. Labor Hours removed (always blank, not needed).
 ACTUALS_BUDGET_ACCOUNTS = [
-    ("5001 Labor Cost",         "5001 DIR : Direct Labor"),
-    ("5002 Consulting",         "5002 DIR : Direct Consulting"),
-    ("5003 Material",           "5003 DIR : Direct Materials"),
-    ("5004 Travel",             "5004 DIR : Direct Travel"),
-    ("5005 Subcontracting",     "5005 DIR : Subrecipient Costs"),
-    ("5008 Equipment",          "5008 DIR : Direct Equipment"),
-    ("5009 Other Direct Costs", "5009 DIR : Direct Other Costs"),
-    ("5010 Equipment",          "5010 DIR : EQ & Materials (NO OH)"),
-    ("5990 Fringe",             "5990 ALLO : Allo Fringe"),
-    ("5991 G&A",                "5991 ALLO : Allo G and A"),
-    ("5992 Sub K Overhead",     "5992 ALLO : Allo SubK OH"),
-    ("5993 Sub K Overhead",     "5993 ALLO : DNU ALLO G and A OH WFD"),
+    ("5001 Labor Cost",              "5001 DIR : Direct Labor"),
+    ("5002 Consulting",              "5002 DIR : Direct Consulting"),
+    ("5003 Material",                "5003 DIR : Direct Materials"),
+    ("5004 Travel",                  "5004 DIR : Direct Travel"),
+    ("5005 Subcontracting",          "5005 DIR : Subrecipient Costs"),
+    ("5007 DNU - Direct Supplies",   "5007 DIR : DNU - Direct Supplies"),
+    ("5008 Equipment",               "5008 DIR : Direct Equipment"),
+    ("5009 Other Direct Costs",      "5009 DIR : Direct Other Costs"),
+    ("5010 Equipment",               "5010 DIR : EQ & Materials (NO OH)"),
+    ("5098 DNU Direct Accruals Gov", "5098 DIR : DNU - Direct Accruals Gov"),
+    ("5099 DNU - Other Direct Costs","5099 DIR : DNU - Other Direct Costs"),
+    ("5990 Fringe",                  "5990 ALLO : Allo Fringe"),
+    ("5991 G&A",                     "5991 ALLO : Allo G and A"),
+    ("5992 Sub K Overhead",          "5992 ALLO : Allo SubK OH"),
+    ("5993 Sub K Overhead",          "5993 ALLO : DNU ALLO G and A OH WFD"),
 ]
 
 CONTRACTING_ACCOUNTS = [
@@ -234,26 +241,26 @@ ROW_FYE      = 15
 ROW_Q        = 16
 # Actuals
 ROW_ACTUALS_START = 17   # 5001 Labor Cost (first account)
-ROW_ACTUALS_END   = 28   # 5993 Sub K Overhead (last account, 12 rows)
-ROW_ACTUALS_TOTAL = 29
+ROW_ACTUALS_END   = 31   # 5993 Sub K Overhead (last account, 15 rows)
+ROW_ACTUALS_TOTAL = 32
 # Budgeted
-ROW_BUDGET_START = 30
-ROW_BUDGET_END   = 41
-ROW_BUDGET_TOTAL = 42
+ROW_BUDGET_START = 33
+ROW_BUDGET_END   = 47
+ROW_BUDGET_TOTAL = 48
 # Contracting
-ROW_COMMITTED      = 43
-ROW_OBLIGATED      = 44
-ROW_EXPENDED       = 45
-ROW_REMAINING_CASH = 46
+ROW_COMMITTED      = 49
+ROW_OBLIGATED      = 50
+ROW_EXPENDED       = 51
+ROW_REMAINING_CASH = 52
 # Cumulative
-ROW_CUM_Q_LABELS   = 49
-ROW_CUM_COMMITTED  = 50
-ROW_CUM_OBLIGATED  = 51
-ROW_CUM_EXPENDED   = 52
-ROW_CUM_BUDGETED   = 53
-ROW_CUM_ACTUAL     = 54
+ROW_CUM_Q_LABELS   = 55
+ROW_CUM_COMMITTED  = 56
+ROW_CUM_OBLIGATED  = 57
+ROW_CUM_EXPENDED   = 58
+ROW_CUM_BUDGETED   = 59
+ROW_CUM_ACTUAL     = 60
 # Chart
-ROW_CHART_START    = 57
+ROW_CHART_START    = 63
 
 COL_DATA_START = 3  # col C
 
